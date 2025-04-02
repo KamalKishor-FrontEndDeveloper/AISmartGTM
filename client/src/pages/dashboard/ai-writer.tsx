@@ -1,8 +1,9 @@
-import React, { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import React, { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { useLocation } from "wouter";
 import { 
   Card, 
   CardContent, 
@@ -13,6 +14,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { 
   Select,
   SelectContent,
@@ -28,7 +30,9 @@ import {
   RefreshCcw, 
   Send, 
   Sparkles,
-  Coins
+  Coins,
+  Mail,
+  LinkedinIcon
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -38,6 +42,15 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 type MessageTemplate = {
   id: string;
@@ -49,11 +62,42 @@ type MessageTemplate = {
 export default function AiWriterPage() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [location] = useLocation();
   const [selectedContact, setSelectedContact] = useState<number | null>(null);
   const [messageTemplate, setMessageTemplate] = useState<string>("introduction");
   const [messageTone, setMessageTone] = useState<string>("professional");
   const [generatedMessage, setGeneratedMessage] = useState<string>("");
   const [customPrompt, setCustomPrompt] = useState<string>("");
+  const [emailSubject, setEmailSubject] = useState<string>("");
+  const [showEmailDialog, setShowEmailDialog] = useState<boolean>(false);
+  const [showLinkedInDialog, setShowLinkedInDialog] = useState<boolean>(false);
+  
+  // Parse URL parameters to pre-select contact if coming from contacts page
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const contactParam = urlParams.get('contact');
+    
+    if (contactParam) {
+      try {
+        const contactData = JSON.parse(decodeURIComponent(contactParam));
+        if (contactData && contactData.id) {
+          setSelectedContact(contactData.id);
+          
+          // Set a custom prompt based on the contact information
+          if (contactData.fullName && (contactData.jobTitle || contactData.companyName)) {
+            const promptContext = `This is for ${contactData.fullName}${contactData.jobTitle ? `, who is a ${contactData.jobTitle}` : ''}${contactData.companyName ? ` at ${contactData.companyName}` : ''}.`;
+            
+            if (messageTemplate === 'custom') {
+              setCustomPrompt(promptContext);
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Error parsing contact data from URL", e);
+      }
+    }
+  }, [location]);
   
   // Get user's contacts
   const { data: contactsData, isLoading: isLoadingContacts } = useQuery({
@@ -124,6 +168,71 @@ export default function AiWriterPage() {
       description: "Message copied to clipboard",
     });
   };
+  
+  // Send Email mutation
+  const sendEmailMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedContact || !generatedMessage) {
+        throw new Error("Contact and message are required");
+      }
+      
+      return apiRequest("/api/ai-writer/send-email", {
+        method: "POST",
+        body: JSON.stringify({
+          contactId: selectedContact,
+          message: generatedMessage,
+          subject: emailSubject
+        })
+      });
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Email sent",
+        description: data.message || "Email sent successfully",
+      });
+      setShowEmailDialog(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/contacts"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send email",
+        variant: "destructive"
+      });
+    }
+  });
+  
+  // Send LinkedIn connection request mutation
+  const sendLinkedInRequestMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedContact || !generatedMessage) {
+        throw new Error("Contact and message are required");
+      }
+      
+      return apiRequest("/api/contact/linkedin-connect", {
+        method: "POST",
+        body: JSON.stringify({
+          contactId: selectedContact,
+          message: generatedMessage
+        })
+      });
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Connection request sent",
+        description: data.message || "LinkedIn connection request sent successfully",
+      });
+      setShowLinkedInDialog(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/contacts"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send LinkedIn connection request",
+        variant: "destructive"
+      });
+    }
+  });
   
   // Message templates
   const messageTemplates: MessageTemplate[] = [
@@ -346,7 +455,7 @@ export default function AiWriterPage() {
               </div>
             </CardContent>
             
-            <CardFooter className="border-t pt-4">
+            <CardFooter className="border-t pt-4 flex-col space-y-4">
               <div className="flex justify-between w-full">
                 <Button
                   variant="outline"
@@ -374,6 +483,34 @@ export default function AiWriterPage() {
                   )}
                 </Button>
               </div>
+              
+              {/* Message Action Buttons */}
+              {generatedMessage && (
+                <div className="w-full flex flex-col space-y-2">
+                  <div className="w-full h-px bg-neutral-200"></div>
+                  <div className="flex justify-between gap-2">
+                    <Button 
+                      variant="secondary" 
+                      className="flex-1"
+                      disabled={!selectedContactDetails?.email}
+                      onClick={() => setShowEmailDialog(true)}
+                    >
+                      <Mail size={16} className="mr-2" />
+                      Send Email
+                    </Button>
+                    
+                    <Button 
+                      variant="secondary"
+                      className="flex-1"
+                      disabled={!selectedContactDetails?.linkedInUrl}
+                      onClick={() => setShowLinkedInDialog(true)}
+                    >
+                      <LinkedinIcon size={16} className="mr-2" />
+                      LinkedIn Connect
+                    </Button>
+                  </div>
+                </div>
+              )}
             </CardFooter>
           </Card>
         </div>
@@ -447,6 +584,112 @@ Best regards,
           </CardContent>
         </Card>
       </div>
+      
+      {/* Email Dialog */}
+      <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Send Email</DialogTitle>
+            <DialogDescription>
+              Send this message to {selectedContactDetails?.fullName} via email
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Email Address</label>
+              <div className="p-2 border rounded bg-neutral-50">
+                {selectedContactDetails?.email}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Subject</label>
+              <Input 
+                value={emailSubject}
+                onChange={(e) => setEmailSubject(e.target.value)}
+                placeholder="Enter subject line"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Message</label>
+              <div className="p-3 border rounded max-h-[200px] overflow-y-auto whitespace-pre-line">
+                {generatedMessage}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEmailDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => sendEmailMutation.mutate()}
+              disabled={!emailSubject || sendEmailMutation.isPending}
+            >
+              {sendEmailMutation.isPending ? (
+                <>
+                  <Loader2 size={16} className="mr-2 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Mail size={16} className="mr-2" />
+                  Send Email
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* LinkedIn Dialog */}
+      <Dialog open={showLinkedInDialog} onOpenChange={setShowLinkedInDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Send LinkedIn Connection</DialogTitle>
+            <DialogDescription>
+              Send a connection request to {selectedContactDetails?.fullName} on LinkedIn
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">LinkedIn Profile</label>
+              <div className="p-2 border rounded bg-neutral-50 break-all text-sm">
+                {selectedContactDetails?.linkedInUrl}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Connection Message</label>
+              <div className="p-3 border rounded max-h-[200px] overflow-y-auto whitespace-pre-line">
+                {generatedMessage}
+              </div>
+              <p className="text-xs text-neutral-500">
+                Note: LinkedIn limits connection messages to 300 characters.
+                The message will be truncated if it exceeds this limit.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowLinkedInDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => sendLinkedInRequestMutation.mutate()}
+              disabled={sendLinkedInRequestMutation.isPending}
+            >
+              {sendLinkedInRequestMutation.isPending ? (
+                <>
+                  <Loader2 size={16} className="mr-2 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <LinkedinIcon size={16} className="mr-2" />
+                  Send Connection
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

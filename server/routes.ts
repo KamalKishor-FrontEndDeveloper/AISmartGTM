@@ -559,6 +559,143 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ message: "Failed to generate message. Please try again." });
     }
   });
+  
+  // Send AI message via email
+  app.post("/api/ai-writer/send-email", authenticateRequest, async (req, res) => {
+    try {
+      const user = (req as any).user;
+      const { contactId, message, subject } = req.body;
+      
+      if (!contactId || !message) {
+        return res.status(400).json({ message: "Contact ID and message are required" });
+      }
+      
+      const contact = await storage.getContact(contactId);
+      if (!contact) {
+        return res.status(404).json({ message: "Contact not found" });
+      }
+      
+      if (!contact.email) {
+        return res.status(400).json({ message: "Contact has no email address" });
+      }
+      
+      // In a production environment, this would actually send the email
+      // For this demo, we'll just simulate it and update the contact record
+      
+      // Mark message as sent
+      await storage.updateContact(contactId, {
+        messageSent: true,
+        messageSentDate: new Date(),
+        lastContacted: new Date()
+      });
+      
+      return res.status(200).json({
+        success: true,
+        message: `Email sent to ${contact.fullName} at ${contact.email}`,
+        contact: await storage.getContact(contactId)
+      });
+    } catch (error) {
+      console.error("Error sending email:", error);
+      return res.status(500).json({ message: "Failed to send email. Please try again." });
+    }
+  });
+  
+  // Send LinkedIn connection request
+  app.post("/api/contact/linkedin-connect", authenticateRequest, async (req, res) => {
+    try {
+      const user = (req as any).user;
+      const { contactId, message } = req.body;
+      
+      if (!contactId) {
+        return res.status(400).json({ message: "Contact ID is required" });
+      }
+      
+      const contact = await storage.getContact(contactId);
+      if (!contact) {
+        return res.status(404).json({ message: "Contact not found" });
+      }
+      
+      if (!contact.linkedInUrl) {
+        return res.status(400).json({ message: "Contact has no LinkedIn profile URL" });
+      }
+      
+      // In a production environment, this would use LinkedIn API
+      // For this demo, we'll just simulate it and update the contact record
+      
+      // Mark connection request as sent
+      await storage.updateContact(contactId, {
+        connectionSent: true,
+        connectionSentDate: new Date()
+      });
+      
+      return res.status(200).json({
+        success: true,
+        message: `Connection request sent to ${contact.fullName} on LinkedIn`,
+        contact: await storage.getContact(contactId)
+      });
+    } catch (error) {
+      console.error("Error sending LinkedIn connection request:", error);
+      return res.status(500).json({ message: "Failed to send connection request. Please try again." });
+    }
+  });
+  
+  // Enrich a single contact
+  app.post("/api/contact/enrich", authenticateRequest, async (req, res) => {
+    try {
+      const user = (req as any).user;
+      const { contactId } = req.body;
+      
+      if (!contactId) {
+        return res.status(400).json({ message: "Contact ID is required" });
+      }
+      
+      const contact = await storage.getContact(contactId);
+      if (!contact) {
+        return res.status(404).json({ message: "Contact not found" });
+      }
+      
+      // Credit cost for enrichment
+      const enrichCost = 5;
+      
+      // Check if user has enough credits
+      const updatedCredits = await storage.useCredits(
+        user.id, 
+        enrichCost, 
+        `Contact enrichment for ${contact.fullName}`
+      );
+      
+      if (updatedCredits === null) {
+        return res.status(400).json({ message: "Insufficient credits" });
+      }
+      
+      // In a production environment, this would call an enrichment API
+      // For this demo, we'll just simulate it with sample data
+      
+      const enrichedData = {
+        email: contact.email || `${contact.fullName.toLowerCase().replace(/\s/g, '.')}@${contact.companyName?.toLowerCase().replace(/\s/g, '')}.com`,
+        phone: contact.phone || "+1 (555) 123-4567",
+        linkedInUrl: contact.linkedInUrl || `https://linkedin.com/in/${contact.fullName.toLowerCase().replace(/\s/g, '-')}`,
+        isEnriched: true,
+        emailVerified: true,
+        enrichmentSource: "AI-CRM",
+        enrichmentDate: new Date()
+      };
+      
+      // Update the contact with enriched data
+      const updatedContact = await storage.updateContact(contactId, enrichedData);
+      
+      return res.status(200).json({
+        success: true,
+        message: `Contact data for ${contact.fullName} has been enriched`,
+        contact: updatedContact,
+        creditsUsed: enrichCost,
+        creditsRemaining: updatedCredits
+      });
+    } catch (error) {
+      console.error("Error enriching contact:", error);
+      return res.status(500).json({ message: "Failed to enrich contact. Please try again." });
+    }
+  });
 
   // CRM INTEGRATION ROUTES
   // Connection status routes

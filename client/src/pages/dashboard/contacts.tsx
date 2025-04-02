@@ -65,6 +65,9 @@ export default function ContactsNewPage() {
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isRevealingEmail, setIsRevealingEmail] = useState(false);
+  const [isEnrichmentDialogOpen, setIsEnrichmentDialogOpen] = useState(false);
+  const [isLinkedInDialogOpen, setIsLinkedInDialogOpen] = useState(false);
+  const [isWriteMessageDialogOpen, setIsWriteMessageDialogOpen] = useState(false);
   
   // Get user's contacts
   const { data, isLoading } = useQuery({
@@ -246,6 +249,71 @@ export default function ContactsNewPage() {
     revealEmailMutation.mutate(contactId);
   };
   
+  // Handle contact enrichment
+  const enrichContactMutation = useMutation({
+    mutationFn: async (contactId: number) => {
+      return apiRequest("/api/enrich/contact", {
+        method: "POST",
+        body: JSON.stringify({ contactId })
+      });
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/contacts"] });
+      toast({
+        title: "Contact Enriched",
+        description: "The contact has been successfully enriched with additional data",
+      });
+      setIsEnrichmentDialogOpen(false);
+      setSelectedContact(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to enrich contact data",
+        variant: "destructive"
+      });
+    }
+  });
+  
+  // Handle LinkedIn connection request
+  const sendLinkedInRequestMutation = useMutation({
+    mutationFn: async ({ contactId, message }: { contactId: number, message: string }) => {
+      return apiRequest("/api/linkedin/connect", {
+        method: "POST",
+        body: JSON.stringify({ contactId, message })
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/contacts"] });
+      toast({
+        title: "LinkedIn Request Sent",
+        description: "Your connection request has been queued for sending",
+      });
+      setIsLinkedInDialogOpen(false);
+      setSelectedContact(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send LinkedIn connection request",
+        variant: "destructive"
+      });
+    }
+  });
+  
+  // Handle writing AI message
+  const handleWriteMessage = (contact: Contact) => {
+    setSelectedContact(contact);
+    // Navigate to AI Writer page with contact info as URL parameters
+    const contactParams = encodeURIComponent(JSON.stringify({
+      id: contact.id,
+      fullName: contact.fullName,
+      jobTitle: contact.jobTitle || "",
+      companyName: companiesData?.companies.find(c => c.id === contact.companyId)?.name || ""
+    }));
+    window.location.href = `/dashboard/ai-writer?contact=${contactParams}`;
+  };
+  
   // Filter contacts based on search term
   const filteredContacts = data?.contacts.filter((contact: Contact) => {
     if (!searchTerm) return true;
@@ -378,6 +446,15 @@ export default function ContactsNewPage() {
                       description: `Viewing ${contact.fullName}'s details`,
                     });
                   }}
+                  onEnrichContact={(contact) => {
+                    setSelectedContact(contact);
+                    enrichContactMutation.mutate(contact.id);
+                  }}
+                  onSendLinkedInRequest={(contact) => {
+                    setSelectedContact(contact);
+                    setIsLinkedInDialogOpen(true);
+                  }}
+                  onWriteMessage={handleWriteMessage}
                   isRevealingEmail={isRevealingEmail}
                 />
               ) : (
@@ -506,6 +583,75 @@ export default function ContactsNewPage() {
                   </>
                 ) : (
                   "Delete Contact"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+      
+      {/* LinkedIn Connection Request Dialog */}
+      {selectedContact && (
+        <Dialog open={isLinkedInDialogOpen} onOpenChange={setIsLinkedInDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Send LinkedIn Connection Request</DialogTitle>
+              <DialogDescription>
+                Send a personalized connection request to {selectedContact.fullName}
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              <div className="flex items-start space-x-4">
+                <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
+                  <LinkedinIcon className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h4 className="font-medium">{selectedContact.fullName}</h4>
+                  <p className="text-sm text-gray-500">{selectedContact.jobTitle}</p>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  Personalized Message
+                </label>
+                <textarea 
+                  className="w-full p-2 border border-gray-200 rounded-md min-h-[120px]"
+                  placeholder={`Hi ${selectedContact.fullName},\n\nI'd like to connect with you on LinkedIn.\n\nBest regards,\n${user?.fullName}`}
+                  id="linkedin-message"
+                />
+                <p className="text-xs text-gray-500">
+                  This will cost 2 credits to send a connection request
+                </p>
+              </div>
+            </div>
+            
+            <DialogFooter>
+              <Button 
+                variant="outline" 
+                onClick={() => setIsLinkedInDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => {
+                  const message = (document.getElementById('linkedin-message') as HTMLTextAreaElement).value;
+                  sendLinkedInRequestMutation.mutate({
+                    contactId: selectedContact.id,
+                    message
+                  });
+                }}
+                disabled={sendLinkedInRequestMutation.isPending}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {sendLinkedInRequestMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  "Send Connection Request"
                 )}
               </Button>
             </DialogFooter>
