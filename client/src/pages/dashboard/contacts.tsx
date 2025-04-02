@@ -76,6 +76,7 @@ export default function ContactsNewPage() {
   const [isEnrichmentDialogOpen, setIsEnrichmentDialogOpen] = useState(false);
   const [isLinkedInDialogOpen, setIsLinkedInDialogOpen] = useState(false);
   const [isWriteMessageDialogOpen, setIsWriteMessageDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   
   // Get user's contacts
   const { data, isLoading } = useQuery({
@@ -144,7 +145,8 @@ export default function ContactsNewPage() {
         title: "Contact updated",
         description: "The contact has been updated successfully",
       });
-      setSelectedContact(null);
+      setIsEditDialogOpen(false);
+      setEditContact(null);
     },
     onError: (error) => {
       toast({
@@ -206,36 +208,40 @@ export default function ContactsNewPage() {
     }
   });
   
+  // Create separate state for edit contact to avoid conflicts with other dialogs
+  const [editContact, setEditContact] = useState<Contact | null>(null);
+
   // Form for creating/editing contacts
   const form = useForm<ContactFormValues>({
     resolver: zodResolver(contactFormSchema),
     defaultValues: {
-      fullName: selectedContact?.fullName || "",
-      email: selectedContact?.email || "",
-      phone: selectedContact?.phone || "",
-      jobTitle: selectedContact?.jobTitle || "",
-      companyId: selectedContact?.companyId || undefined,
-      location: selectedContact?.location || "",
-      linkedInUrl: selectedContact?.linkedInUrl || "",
-      notes: selectedContact?.notes || "",
-      tags: selectedContact?.tags || []
+      fullName: editContact?.fullName || "",
+      email: editContact?.email || "",
+      phone: editContact?.phone || "",
+      jobTitle: editContact?.jobTitle || "",
+      companyId: editContact?.companyId || undefined,
+      location: editContact?.location || "",
+      linkedInUrl: editContact?.linkedInUrl || "",
+      notes: editContact?.notes || "",
+      tags: editContact?.tags || []
     }
   });
   
-  // Reset form when selected contact changes
+  // Reset form when edit contact changes
   useEffect(() => {
-    if (selectedContact) {
+    if (editContact) {
       form.reset({
-        fullName: selectedContact.fullName,
-        email: selectedContact.email || "",
-        phone: selectedContact.phone || "",
-        jobTitle: selectedContact.jobTitle || "",
-        companyId: selectedContact.companyId || undefined,
-        location: selectedContact.location || "",
-        linkedInUrl: selectedContact.linkedInUrl || "",
-        notes: selectedContact.notes || "",
-        tags: selectedContact.tags || []
+        fullName: editContact.fullName,
+        email: editContact.email || "",
+        phone: editContact.phone || "",
+        jobTitle: editContact.jobTitle || "",
+        companyId: editContact.companyId || undefined,
+        location: editContact.location || "",
+        linkedInUrl: editContact.linkedInUrl || "",
+        notes: editContact.notes || "",
+        tags: editContact.tags || []
       });
+      setIsEditDialogOpen(true);
     } else {
       form.reset({
         fullName: "",
@@ -249,7 +255,7 @@ export default function ContactsNewPage() {
         tags: []
       });
     }
-  }, [selectedContact, form]);
+  }, [editContact, form]);
   
   // Handle revealing email
   const handleRevealEmail = (contactId: number) => {
@@ -523,7 +529,7 @@ export default function ContactsNewPage() {
                   contacts={paginatedContacts}
                   companies={companiesData?.companies || []}
                   onEmailReveal={handleRevealEmail}
-                  onEditContact={setSelectedContact}
+                  onEditContact={setEditContact}
                   onDeleteContact={(contact) => {
                     setSelectedContact(contact);
                     setIsDeleteDialogOpen(true);
@@ -620,28 +626,31 @@ export default function ContactsNewPage() {
       </Dialog>
       
       {/* Edit Contact Dialog */}
-      {selectedContact && !isDeleteDialogOpen && (
-        <Dialog 
-          open={!!selectedContact && !isDeleteDialogOpen} 
-          onOpenChange={(open) => !open && setSelectedContact(null)}
-        >
-          <DialogContent className="max-w-xl">
-            <DialogHeader>
-              <DialogTitle>Edit Contact</DialogTitle>
-              <DialogDescription>
-                Update this contact's information
-              </DialogDescription>
-            </DialogHeader>
-            
+      <Dialog 
+        open={isEditDialogOpen} 
+        onOpenChange={(open) => {
+          setIsEditDialogOpen(open);
+          if (!open) setEditContact(null);
+        }}
+      >
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Edit Contact</DialogTitle>
+            <DialogDescription>
+              Update this contact's information
+            </DialogDescription>
+          </DialogHeader>
+          
+          {editContact && (
             <ContactForm 
               form={form} 
               companies={companiesData?.companies || []}
-              onSubmit={(data) => updateContactMutation.mutate({ id: selectedContact.id, contact: data })}
+              onSubmit={(data) => updateContactMutation.mutate({ id: editContact.id, contact: data })}
               isSubmitting={updateContactMutation.isPending}
             />
-          </DialogContent>
-        </Dialog>
-      )}
+          )}
+        </DialogContent>
+      </Dialog>
       
       {/* Delete Contact Dialog */}
       {selectedContact && (

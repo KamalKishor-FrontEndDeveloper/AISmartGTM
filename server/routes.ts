@@ -600,8 +600,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Direct message generation for LinkedIn or other platforms
+  app.post("/api/message/generate", authenticateRequest, async (req, res) => {
+    try {
+      const user = (req as any).user;
+      const { 
+        contactFullName, 
+        contactJobTitle, 
+        contactCompanyName, 
+        userFullName, 
+        userJobTitle, 
+        userCompanyName, 
+        purpose, 
+        tone 
+      } = req.body;
+      
+      if (!contactFullName || !userFullName) {
+        return res.status(400).json({ message: "Contact name and user name are required" });
+      }
+      
+      if (!Object.values(MessagePurpose).includes(purpose as MessagePurpose)) {
+        return res.status(400).json({ message: "Invalid message purpose" });
+      }
+      
+      if (!Object.values(MessageTone).includes(tone as MessageTone)) {
+        return res.status(400).json({ message: "Invalid message tone" });
+      }
+      
+      // Check if user has enough credits
+      const generateCost = 3; // Credits per message generation
+      const updatedCredits = await storage.useCredits(
+        user.id, 
+        generateCost, 
+        "AI message generation for LinkedIn"
+      );
+      
+      if (updatedCredits === null) {
+        return res.status(400).json({ message: "Insufficient credits" });
+      }
+      
+      // Generate message
+      const message = await generateMessage({
+        contactFullName,
+        contactJobTitle,
+        contactCompanyName,
+        userFullName,
+        userCompanyName,
+        userJobTitle,
+        purpose: purpose as MessagePurpose,
+        tone: tone as MessageTone
+      });
+      
+      return res.status(200).json({
+        message,
+        creditsUsed: generateCost,
+        creditsRemaining: updatedCredits
+      });
+    } catch (error) {
+      console.error("Error generating message:", error);
+      return res.status(500).json({ message: "Failed to generate message. Please try again." });
+    }
+  });
+
   // Send LinkedIn connection request
-  app.post("/api/contact/linkedin-connect", authenticateRequest, async (req, res) => {
+  app.post("/api/linkedin/connect", authenticateRequest, async (req, res) => {
     try {
       const user = (req as any).user;
       const { contactId, message } = req.body;
