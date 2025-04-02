@@ -22,6 +22,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   Loader2, 
   Plus, 
@@ -32,7 +33,13 @@ import {
   ArrowRight,
   Grid,
   Menu as MenuIcon,
-  Linkedin
+  Linkedin,
+  Sparkles,
+  Mail,
+  Phone,
+  Globe,
+  Building,
+  MessageSquare
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -251,11 +258,39 @@ export default function ContactsNewPage() {
   };
   
   // Handle contact enrichment
+  const [enrichmentOptions, setEnrichmentOptions] = useState([
+    { id: "email", label: "Email Address", creditCost: 2, checked: true, icon: <Mail className="h-4 w-4 text-blue-500" /> },
+    { id: "phone", label: "Phone Number", creditCost: 3, checked: true, icon: <Phone className="h-4 w-4 text-green-500" /> },
+    { id: "social", label: "Social Profiles", creditCost: 1, checked: false, icon: <Linkedin className="h-4 w-4 text-blue-600" /> },
+    { id: "company", label: "Company Details", creditCost: 4, checked: false, icon: <Building className="h-4 w-4 text-amber-500" /> }
+  ]);
+  
+  const toggleEnrichmentOption = (id: string) => {
+    setEnrichmentOptions(options => 
+      options.map(option => 
+        option.id === id ? { ...option, checked: !option.checked } : option
+      )
+    );
+  };
+  
+  const getTotalEnrichmentCost = () => {
+    return enrichmentOptions
+      .filter(option => option.checked)
+      .reduce((total, option) => total + option.creditCost, 0);
+  };
+  
   const enrichContactMutation = useMutation({
     mutationFn: async (contactId: number) => {
+      const options = enrichmentOptions
+        .filter(option => option.checked)
+        .map(option => option.id);
+      
       return apiRequest("/api/enrich/contact", {
         method: "POST",
-        body: JSON.stringify({ contactId })
+        body: JSON.stringify({ 
+          contactId,
+          options
+        })
       });
     },
     onSuccess: (data) => {
@@ -449,7 +484,7 @@ export default function ContactsNewPage() {
                   }}
                   onEnrichContact={(contact) => {
                     setSelectedContact(contact);
-                    enrichContactMutation.mutate(contact.id);
+                    setIsEnrichmentDialogOpen(true);
                   }}
                   onSendLinkedInRequest={(contact) => {
                     setSelectedContact(contact);
@@ -653,6 +688,99 @@ export default function ContactsNewPage() {
                   </>
                 ) : (
                   "Send Connection Request"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+      
+      {/* Contact Enrichment Dialog */}
+      {selectedContact && (
+        <Dialog open={isEnrichmentDialogOpen} onOpenChange={setIsEnrichmentDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Enrich Contact Data</DialogTitle>
+              <DialogDescription>
+                Use AI to find additional information about {selectedContact.fullName}
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              <div className="flex items-start space-x-4">
+                <div className="w-10 h-10 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0">
+                  <Sparkles className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h4 className="font-medium">{selectedContact.fullName}</h4>
+                  <p className="text-sm text-gray-500">{selectedContact.jobTitle}</p>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  Select data to enrich:
+                </label>
+                <Card>
+                  <CardContent className="p-3">
+                    <div className="space-y-3">
+                      {enrichmentOptions.map(option => (
+                        <div key={option.id} className="flex items-center justify-between">
+                          <div className="flex items-center">
+                            <Checkbox 
+                              id={`enrich-${option.id}`}
+                              checked={option.checked}
+                              onCheckedChange={() => toggleEnrichmentOption(option.id)}
+                              className="mr-2"
+                            />
+                            <label 
+                              htmlFor={`enrich-${option.id}`}
+                              className="text-sm font-medium cursor-pointer flex items-center"
+                            >
+                              {option.icon}
+                              <span className="ml-2">{option.label}</span>
+                            </label>
+                          </div>
+                          <Badge variant="outline" className="ml-4">
+                            {option.creditCost} Credit{option.creditCost > 1 ? 's' : ''}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+              
+              <div className="flex items-center justify-between p-3 border rounded-md bg-gray-50">
+                <span className="text-sm font-medium">Total Cost</span>
+                <Badge variant="outline" className="bg-white">
+                  {getTotalEnrichmentCost()} Credit{getTotalEnrichmentCost() > 1 ? 's' : ''}
+                </Badge>
+              </div>
+              
+              <div className="text-sm text-gray-500">
+                Your available credits: <span className="font-medium">{user?.credits || 0}</span>
+              </div>
+            </div>
+            
+            <DialogFooter>
+              <Button 
+                variant="outline" 
+                onClick={() => setIsEnrichmentDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => enrichContactMutation.mutate(selectedContact.id)}
+                disabled={enrichContactMutation.isPending || getTotalEnrichmentCost() > (user?.credits || 0) || getTotalEnrichmentCost() === 0}
+              >
+                {enrichContactMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Enriching...
+                  </>
+                ) : (
+                  "Enrich Contact"
                 )}
               </Button>
             </DialogFooter>

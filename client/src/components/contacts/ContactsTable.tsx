@@ -23,7 +23,7 @@ import {
   Trash2, 
   Pencil, 
   Sparkles, 
-  LinkedinIcon,
+  Linkedin,
   MessageSquare
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -182,7 +182,7 @@ export default function ContactsTable({
                         
                         {onSendLinkedInRequest && (
                           <DropdownMenuItem onClick={() => onSendLinkedInRequest(contact)}>
-                            <LinkedinIcon className="mr-2 h-4 w-4 text-blue-600" />
+                            <Linkedin className="mr-2 h-4 w-4 text-blue-600" />
                             <span>Connect on LinkedIn</span>
                           </DropdownMenuItem>
                         )}
