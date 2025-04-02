@@ -114,8 +114,11 @@ export default function SearchPanel({ onSearch, isSearching }: SearchPanelProps)
                   <FormItem>
                     <FormLabel>Industry</FormLabel>
                     <Select
-                      onValueChange={field.onChange}
-                      value={field.value || ""}
+                      onValueChange={(value) => {
+                        // Handle the "all" value as empty for the form field
+                        field.onChange(value === "all" ? "" : value);
+                      }}
+                      value={field.value || "all"}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -123,7 +126,7 @@ export default function SearchPanel({ onSearch, isSearching }: SearchPanelProps)
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">Select an industry</SelectItem>
+                        <SelectItem value="all">Select an industry</SelectItem>
                         {industries.map((industry) => (
                           <SelectItem key={industry} value={industry.toLowerCase()}>
                             {industry}
