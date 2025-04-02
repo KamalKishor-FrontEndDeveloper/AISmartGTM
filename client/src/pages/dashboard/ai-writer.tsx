@@ -90,14 +90,15 @@ export default function AiWriterPage() {
         throw new Error("Please select a contact");
       }
       
-      const res = await apiRequest("POST", "/api/ai-writer/generate", {
-        contactId: selectedContact,
-        purpose: messageTemplate,
-        tone: messageTone,
-        customPrompt: customPrompt
+      return apiRequest("/api/ai-writer/generate", {
+        method: "POST",
+        body: JSON.stringify({
+          contactId: selectedContact,
+          purpose: messageTemplate,
+          tone: messageTone,
+          customPrompt: customPrompt
+        })
       });
-      
-      return res.json();
     },
     onSuccess: (data) => {
       setGeneratedMessage(data.message);

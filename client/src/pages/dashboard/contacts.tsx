@@ -97,8 +97,10 @@ export default function ContactsNewPage() {
   // Create contact mutation
   const createContactMutation = useMutation({
     mutationFn: async (contact: ContactFormValues) => {
-      const res = await apiRequest("POST", "/api/contacts", contact);
-      return res.json();
+      return apiRequest("/api/contacts", {
+        method: "POST",
+        body: JSON.stringify(contact)
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/contacts"] });
@@ -120,8 +122,10 @@ export default function ContactsNewPage() {
   // Update contact mutation
   const updateContactMutation = useMutation({
     mutationFn: async ({ id, contact }: { id: number, contact: ContactFormValues }) => {
-      const res = await apiRequest("PATCH", `/api/contacts/${id}`, contact);
-      return res.json();
+      return apiRequest(`/api/contacts/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(contact)
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/contacts"] });
@@ -143,8 +147,9 @@ export default function ContactsNewPage() {
   // Delete contact mutation
   const deleteContactMutation = useMutation({
     mutationFn: async (id: number) => {
-      const res = await apiRequest("DELETE", `/api/contacts/${id}`, undefined);
-      return res.json();
+      return apiRequest(`/api/contacts/${id}`, {
+        method: "DELETE"
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/contacts"] });
@@ -167,8 +172,10 @@ export default function ContactsNewPage() {
   // Reveal email mutation
   const revealEmailMutation = useMutation({
     mutationFn: async (contactId: number) => {
-      const res = await apiRequest("POST", "/api/enrich/reveal-email", { contactId });
-      return res.json();
+      return apiRequest("/api/enrich/reveal-email", {
+        method: "POST",
+        body: JSON.stringify({ contactId })
+      });
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/contacts"] });

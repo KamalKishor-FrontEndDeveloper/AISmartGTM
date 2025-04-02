@@ -35,18 +35,7 @@ export function AuthProvider(props: { children: ReactNode }) {
         return;
       }
       
-      const res = await fetch("/api/user/profile", {
-        headers: {
-          Authorization: `Bearer ${token}`
-        },
-        credentials: "include"
-      });
-      
-      if (!res.ok) {
-        throw new Error("Failed to fetch user profile");
-      }
-      
-      const data = await res.json();
+      const data = await apiRequest("/api/user/profile");
       setUser(data.user);
     } catch (error) {
       console.error("Error fetching user profile:", error);
@@ -78,8 +67,10 @@ export function AuthProvider(props: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     try {
       setIsLoading(true);
-      const res = await apiRequest("POST", "/api/auth/login", { email, password });
-      const data = await res.json();
+      const data = await apiRequest("/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email, password })
+      });
       
       localStorage.setItem("authToken", data.token);
       setUser(data.user);
@@ -115,12 +106,13 @@ export function AuthProvider(props: { children: ReactNode }) {
   const register = async (userData: any) => {
     try {
       setIsLoading(true);
-      const res = await apiRequest("POST", "/api/auth/signup/step4", {
-        ...userData,
-        preferences: userData.preferences || ["contact_search", "email_enrichment", "ai_messaging"]
+      const data = await apiRequest("/api/auth/signup/step4", {
+        method: "POST",
+        body: JSON.stringify({
+          ...userData,
+          preferences: userData.preferences || ["contact_search", "email_enrichment", "ai_messaging"]
+        })
       });
-      
-      const data = await res.json();
       
       localStorage.setItem("authToken", data.token);
       setUser(data.user);
