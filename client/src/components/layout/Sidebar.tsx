@@ -100,19 +100,21 @@ export default function Sidebar({ isOpen }: { isOpen: boolean }) {
       <div className="h-full flex flex-col">
         <div className="px-4 py-3">
           <Link href="/dashboard/enrich">
-            <Button className="flex items-center justify-between w-full px-4 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-md transition">
-              <span className="font-medium">Find Leads</span>
-              <Search size={16} />
-            </Button>
+            <div>
+              <Button className="flex items-center justify-between w-full px-4 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-md transition">
+                <span className="font-medium">Find Leads</span>
+                <Search size={16} />
+              </Button>
+            </div>
           </Link>
         </div>
         
         <nav className="flex-1 space-y-1 px-2 py-3 overflow-y-auto">
           {navItems.map((item) => (
             <Link key={item.href} href={item.href}>
-              <a
+              <div
                 className={cn(
-                  "flex items-center px-4 py-2 rounded-md",
+                  "flex items-center px-4 py-2 rounded-md cursor-pointer",
                   location === item.href
                     ? "bg-neutral-100 text-primary-500 font-medium"
                     : "text-neutral-600 hover:bg-neutral-100"
@@ -130,7 +132,7 @@ export default function Sidebar({ isOpen }: { isOpen: boolean }) {
                     {item.count}
                   </span>
                 )}
-              </a>
+              </div>
             </Link>
           ))}
         </nav>

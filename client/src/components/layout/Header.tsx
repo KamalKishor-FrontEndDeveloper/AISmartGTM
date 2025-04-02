@@ -60,7 +60,7 @@ export default function Header({ toggleSidebar }: { toggleSidebar: () => void })
             <Menu size={20} />
           </button>
           <Link href="/dashboard">
-            <a className="ml-2 lg:ml-0 font-semibold text-lg text-primary-600">AI-CRM</a>
+            <div className="ml-2 lg:ml-0 font-semibold text-lg text-primary-600 cursor-pointer">AI-CRM</div>
           </Link>
         </div>
         

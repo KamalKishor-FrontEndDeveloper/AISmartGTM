@@ -33,21 +33,41 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
       
-      <Route path="/dashboard">
-        {() => (
-          <DashboardLayout>
-            <Switch>
-              <Route path="/dashboard" component={() => <ProtectedRoute component={Dashboard} />} />
-              <Route path="/dashboard/enrich" component={() => <ProtectedRoute component={EnrichPage} />} />
-              <Route path="/dashboard/contacts" component={() => <ProtectedRoute component={ContactsPage} />} />
-              <Route path="/dashboard/companies" component={() => <ProtectedRoute component={CompaniesPage} />} />
-              <Route path="/dashboard/ai-writer" component={() => <ProtectedRoute component={AiWriterPage} />} />
-              <Route path="/dashboard/contact-list" component={() => <ProtectedRoute component={ContactListPage} />} />
-              <Route component={NotFound} />
-            </Switch>
-          </DashboardLayout>
-        )}
-      </Route>
+      <Route path="/dashboard" component={() => (
+        <DashboardLayout>
+          <ProtectedRoute component={Dashboard} />
+        </DashboardLayout>
+      )} />
+      
+      <Route path="/dashboard/enrich" component={() => (
+        <DashboardLayout>
+          <ProtectedRoute component={EnrichPage} />
+        </DashboardLayout>
+      )} />
+      
+      <Route path="/dashboard/contacts" component={() => (
+        <DashboardLayout>
+          <ProtectedRoute component={ContactsPage} />
+        </DashboardLayout>
+      )} />
+      
+      <Route path="/dashboard/companies" component={() => (
+        <DashboardLayout>
+          <ProtectedRoute component={CompaniesPage} />
+        </DashboardLayout>
+      )} />
+      
+      <Route path="/dashboard/ai-writer" component={() => (
+        <DashboardLayout>
+          <ProtectedRoute component={AiWriterPage} />
+        </DashboardLayout>
+      )} />
+      
+      <Route path="/dashboard/contact-list" component={() => (
+        <DashboardLayout>
+          <ProtectedRoute component={ContactListPage} />
+        </DashboardLayout>
+      )} />
       
       <Route component={NotFound} />
     </Switch>
