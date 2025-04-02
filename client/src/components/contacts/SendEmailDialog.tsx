@@ -36,8 +36,20 @@ export function SendEmailDialog({
   isGeneratingMessage,
   generatedMessage,
 }: SendEmailDialogProps) {
+  
+  useEffect(() => {
+    if (!isOpen) {
+      setMessage("");
+    }
+  }, [isOpen]);
   const [subject, setSubject] = useState<string>(`Introduction: ${user?.fullName || ""} from our company`);
-  const [message, setMessage] = useState<string>(generatedMessage || "");
+  const [message, setMessage] = useState<string>("");
+
+  useEffect(() => {
+    if (generatedMessage) {
+      setMessage(generatedMessage);
+    }
+  }, [generatedMessage]);
 
   const queryClient = useQueryClient();
 
