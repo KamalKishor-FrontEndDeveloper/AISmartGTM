@@ -1,0 +1,83 @@
+AI-Powered CRM Features
+🔹 AI Writer (Gemini-Powered) for Auto-Generated Messages
+
+For Contacts & Companies:
+
+Option to Send AI-Generated Connection Requests & Messages
+
+Integrated in Contact & Company List dropdowns
+
+🔹 Dynamic AI-Powered Message Generation
+
+Use Google Gemini Model
+
+Fine-tune responses based on lead details & company data
+
+4️⃣ Smart Contact & Company List (Horizontal Scroll)
+🔹 Optimize UI for Large Data
+
+Instead of separate tabs, use a horizontal scroll view for better UX.
+
+One unified list with tabs scrolling horizontally instead of vertically.
+
+🔹 Dropdown Actions per Contact/Company:
+
+Send Connection Request
+
+Generate AI Message (via AI Writer)
+
+5️⃣ Contact & Company Enrichment
+🔹 Integrate 4-5 Enrichment APIs to fetch missing details:
+
+Icypeas API
+
+FindyEmail API
+
+Apollo.io API
+
+Hunter.io API
+
+Clearbit API
+
+🔹 Credit-Based Enrichment System
+
+Deduct credits per enrichment request.
+
+Show enriched data dynamically in UI.
+
+🔹 Functional Sidebar Filters for Contacts & Companies
+
+Filter by: Industry, Location, Engagement Level, Lead Score, etc.
+
+Ensure real-time filtering based on stored database records.
+
+6️⃣ Credit System for AI & Enrichment
+🔹 Features that consume credits:
+
+AI Writer Usage
+
+Sending Connection Requests
+
+Enrichment API Calls
+
+🔹 Credit Management APIs
+
+Show remaining credits in UI.
+
+Deduct credits per feature usage.
+
+7️⃣ UI/UX Enhancements & Bug Fixes
+🔹 Maintain the existing design → Fix UI/UX where needed
+🔹 Ensure responsiveness & mobile-friendly UI
+🔹 Fix all known bugs & make interactions seamless
+
+🔹 Expected Deliverables
+✅ Full Next.js 15 CRM Dashboard with modular components & clean routing.
+✅ Step-Based Signup with Email Verification.
+✅ AI-Powered Message Generation (Gemini LLM).
+✅ Contact & Company Enrichment via APIs.
+✅ Optimized UI: Horizontal Scroll for Contacts/Companies.
+✅ Credit-Based System for AI & Enrichment.
+✅ Functional Filters & Sidebar for Contacts/Companies.
+✅ Bug-Free & Optimized API Performance with PostgreSQL.
+

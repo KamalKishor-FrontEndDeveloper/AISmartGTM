@@ -12,6 +12,7 @@ import {
   InsertUser
 } from "@shared/schema";
 import { z } from "zod";
+import { generateMessage, MessagePurpose, MessageTone } from "./services/gemini";
 
 const SESSION_SECRET = process.env.SESSION_SECRET || "your-secret-key";
 const MOCK_VERIFICATION_CODE = "123456"; // For demonstration purposes only
@@ -409,10 +410,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/ai-writer/generate", authenticateRequest, async (req, res) => {
     try {
       const user = (req as any).user;
-      const { contactId, purpose, tone } = req.body;
+      const { contactId, purpose, tone, customPrompt } = req.body;
       
       if (!contactId) {
         return res.status(400).json({ message: "Contact ID is required" });
+      }
+      
+      if (!Object.values(MessagePurpose).includes(purpose as MessagePurpose)) {
+        return res.status(400).json({ message: "Invalid message purpose" });
+      }
+      
+      if (!Object.values(MessageTone).includes(tone as MessageTone)) {
+        return res.status(400).json({ message: "Invalid message tone" });
       }
       
       // Check if user has enough credits
@@ -432,17 +441,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Contact not found" });
       }
       
-      // In a real implementation, this would call an AI service
-      // For this demo, we'll generate templated messages
-      let message = "";
-      
-      if (purpose === "introduction") {
-        message = `Hi ${contact.fullName.split(' ')[0]},\n\nI noticed your work at ${contact.companyId ? (await storage.getCompany(contact.companyId))?.name : 'your company'} and was impressed by your achievements as ${contact.jobTitle || 'a professional'} in the industry.\n\nI'd love to connect and explore how we might collaborate.\n\nBest regards,\n${user.fullName}`;
-      } else if (purpose === "followup") {
-        message = `Hi ${contact.fullName.split(' ')[0]},\n\nI wanted to follow up on our previous conversation about ${contact.jobTitle ? 'your role as ' + contact.jobTitle : 'our potential collaboration'}.\n\nWould you be available for a quick call next week to discuss further?\n\nBest regards,\n${user.fullName}`;
-      } else {
-        message = `Hi ${contact.fullName.split(' ')[0]},\n\nI hope this message finds you well. I'm reaching out because I believe our solutions could be valuable for ${contact.companyId ? (await storage.getCompany(contact.companyId))?.name : 'your company'}.\n\nWould you be interested in learning more?\n\nBest regards,\n${user.fullName}`;
+      // Get company information if contact is associated with a company
+      let companyName = null;
+      if (contact.companyId) {
+        const company = await storage.getCompany(contact.companyId);
+        companyName = company?.name || null;
       }
+      
+      // Generate AI message using Gemini
+      const message = await generateMessage({
+        contactFullName: contact.fullName,
+        contactJobTitle: contact.jobTitle || undefined,
+        contactCompanyName: companyName || undefined,
+        userFullName: user.fullName,
+        userCompanyName: user.companyName || undefined,
+        userJobTitle: user.role || undefined,
+        purpose: purpose as MessagePurpose,
+        tone: tone as MessageTone,
+        customPrompt: customPrompt
+      });
       
       return res.status(200).json({
         message,
@@ -450,7 +467,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         creditsRemaining: updatedCredits
       });
     } catch (error) {
-      return res.status(500).json({ message: "Server error" });
+      console.error("Error generating AI message:", error);
+      return res.status(500).json({ message: "Failed to generate message. Please try again." });
     }
   });
 
