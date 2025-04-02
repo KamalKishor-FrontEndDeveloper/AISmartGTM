@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
@@ -184,7 +184,7 @@ export default function CompaniesPage() {
   });
   
   // Reset form when selected company changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (selectedCompany) {
       form.reset({
         name: selectedCompany.name,
