@@ -70,7 +70,7 @@ export async function sendEmail(options: SendEmailOptions): Promise<boolean> {
   try {
     // Create the transporter
     const smtp = createTransporter();
-    
+
     if (!smtp) {
       throw new Error('SMTP not configured properly');
     }
@@ -89,7 +89,7 @@ export async function sendEmail(options: SendEmailOptions): Promise<boolean> {
     // Send the email
     const info = await transporter.sendMail(mailOptions);
     console.log('Email sent:', info.messageId);
-    
+
     return true;
   } catch (error) {
     console.error('Error sending email:', error);
@@ -112,7 +112,7 @@ export async function sendContactEmail(
 
     // Create the transporter
     const smtp = createTransporter();
-    
+
     if (!smtp) {
       throw new Error('SMTP not configured properly');
     }
@@ -139,7 +139,7 @@ export async function sendContactEmail(
     // Send the email
     const info = await transporter.sendMail(mailOptions);
     console.log('Contact email sent:', info.messageId);
-    
+
     return true;
   } catch (error) {
     console.error('Error sending contact email:', error);
