@@ -1,70 +1,52 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Contact } from "@shared/schema";
 import { 
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger
+} from "@/components/ui/tabs";
+import { 
   Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle,
-  CardDescription,
-  CardFooter
+  CardContent
 } from "@/components/ui/card";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { 
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { 
   Loader2, 
-  MoreHorizontal, 
   Plus, 
   Search, 
-  Trash2, 
-  Edit, 
-  Bot, 
-  Mail, 
-  FileText, 
-  Filter, 
-  X,
-  Download
+  Filter,
+  Download,
+  FilterX,
+  ListFilter,
+  ArrowLeft,
+  ArrowRight,
+  ChevronLeft,
+  ChevronRight,
+  Grid,
+  Menu as MenuIcon
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { z } from "zod";
+import ContactsTable from "@/components/contacts/ContactsTable";
+import ContactFilters from "@/components/contacts/ContactFilters";
+import ContactForm from "@/components/contacts/ContactForm";
+import { Badge } from "@/components/ui/badge";
 
 const contactFormSchema = z.object({
   fullName: z.string().min(2, "Full name is required"),
@@ -85,9 +67,12 @@ export default function ContactsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isFiltersVisible, setIsFiltersVisible] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isRevealingEmail, setIsRevealingEmail] = useState(false);
   
   // Get user's contacts
   const { data, isLoading } = useQuery({
@@ -187,6 +172,30 @@ export default function ContactsPage() {
     }
   });
   
+  // Reveal email mutation
+  const revealEmailMutation = useMutation({
+    mutationFn: async (contactId: number) => {
+      const res = await apiRequest("POST", "/api/enrich/reveal-email", { contactId });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/contacts"] });
+      toast({
+        title: "Email revealed",
+        description: `Email is: ${data.email}`,
+      });
+      setIsRevealingEmail(false);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to reveal email",
+        variant: "destructive"
+      });
+      setIsRevealingEmail(false);
+    }
+  });
+  
   // Form for creating/editing contacts
   const form = useForm<ContactFormValues>({
     resolver: zodResolver(contactFormSchema),
@@ -232,13 +241,10 @@ export default function ContactsPage() {
     }
   }, [selectedContact, form]);
   
-  // Generate AI message for a contact
-  const handleGenerateAIMessage = (contact: Contact) => {
-    toast({
-      title: "AI Message",
-      description: "Redirecting to AI Writer for this contact",
-    });
-    // In a real implementation, this would redirect to the AI Writer page with the contact pre-selected
+  // Handle revealing email
+  const handleRevealEmail = (contactId: number) => {
+    setIsRevealingEmail(true);
+    revealEmailMutation.mutate(contactId);
   };
   
   // Filter contacts based on search term
@@ -252,215 +258,284 @@ export default function ContactsPage() {
       (contact.jobTitle && contact.jobTitle.toLowerCase().includes(search)) ||
       (contact.location && contact.location.toLowerCase().includes(search))
     );
-  });
+  }) || [];
   
-  // Get initials from name
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase();
+  // Calculate pagination
+  const itemsPerPage = 10;
+  const totalPages = Math.ceil((filteredContacts?.length || 0) / itemsPerPage);
+  const paginatedContacts = filteredContacts.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+  
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
   };
   
-  // Get random background color based on name
-  const getAvatarColor = (name: string) => {
-    const colors = [
-      "bg-primary-100 text-primary-700",
-      "bg-blue-100 text-blue-700",
-      "bg-amber-100 text-amber-700",
-      "bg-green-100 text-green-700",
-      "bg-purple-100 text-purple-700",
-      "bg-pink-100 text-pink-700"
-    ];
-    
-    const hash = name.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    return colors[hash % colors.length];
-  };
-  
-  // Find company name by ID
-  const getCompanyName = (companyId?: number | null) => {
-    if (!companyId) return "-";
-    const company = companiesData?.companies.find((c: any) => c.id === companyId);
-    return company ? company.name : "-";
-  };
-
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-neutral-800 mb-2">My Contacts</h1>
-        <p className="text-neutral-600">Manage your business contacts and leads in one place</p>
+    <div className="w-full">
+      <div className="flex items-center justify-between mb-4 border-b pb-2">
+        <div className="flex space-x-1">
+          <Button variant="ghost" size="sm" className="text-blue-500">
+            <svg className="w-5 h-5 mr-1" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 6V18M6 12H18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Contacts Search
+          </Button>
+          <Button variant="ghost" size="sm" className="text-gray-500">
+            <svg className="w-5 h-5 mr-1" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 6V18M6 12H18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Companies Search
+          </Button>
+        </div>
+        <div className="text-sm text-gray-500">
+          <span className="font-medium text-primary-500">{user?.credits || 0}</span> Credits Available
+        </div>
       </div>
       
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <CardTitle>Contacts</CardTitle>
-              <CardDescription>
-                You have {data?.contacts?.length || 0} contacts in your database
-              </CardDescription>
-            </div>
-            
-            <div className="flex flex-col sm:flex-row gap-2">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-neutral-400" />
-                <Input
-                  placeholder="Search contacts..."
-                  className="pl-9 w-full sm:w-[250px]"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-                {searchTerm && (
-                  <button 
-                    onClick={() => setSearchTerm("")}
-                    className="absolute right-2.5 top-2.5 text-neutral-400 hover:text-neutral-600"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
+      <div className="flex flex-col md:flex-row gap-4">
+        {isFiltersVisible && (
+          <div className="w-full md:w-64 flex-shrink-0">
+            <ContactFilters />
+          </div>
+        )}
+        
+        <div className="flex-grow">
+          <Card>
+            <CardContent className="p-0">
+              <div className="flex flex-col">
+                <div className="flex items-center justify-between border-b p-3">
+                  <div className="flex items-center space-x-2">
+                    <Button 
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsFiltersVisible(!isFiltersVisible)}
+                      className="h-8"
+                    >
+                      {isFiltersVisible ? (
+                        <FilterX className="h-4 w-4 mr-1" />
+                      ) : (
+                        <Filter className="h-4 w-4 mr-1" />
+                      )}
+                      {isFiltersVisible ? "Hide Filters" : "Filters"}
+                    </Button>
+                    
+                    <div className="relative">
+                      <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input
+                        placeholder="Search..."
+                        className="pl-8 h-8 w-[200px]"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8"
+                    >
+                      <ListFilter className="h-4 w-4 mr-1" />
+                      Filter
+                    </Button>
+                    
+                    <div className="flex items-center space-x-1 border rounded overflow-hidden">
+                      <Button variant="ghost" size="sm" className="rounded-none h-8 w-8 p-0">
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" className="rounded-none h-8 w-8 p-0">
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    
+                    <span className="text-sm text-gray-500">
+                      Showing 1 - {Math.min(paginatedContacts.length, itemsPerPage)} of {filteredContacts.length}
+                    </span>
+                    
+                    <div className="flex items-center space-x-1">
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <Grid className="h-4 w-4 text-blue-500" />
+                      </Button>
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <MenuIcon className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    
+                    <Button size="sm" className="h-8">
+                      Find All
+                    </Button>
+                  </div>
+                </div>
+                
+                {isLoading ? (
+                  <div className="flex justify-center items-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
+                  </div>
+                ) : filteredContacts.length > 0 ? (
+                  <ContactsTable
+                    contacts={paginatedContacts}
+                    companies={companiesData?.companies || []}
+                    onEmailReveal={handleRevealEmail}
+                    onEditContact={setSelectedContact}
+                    onDeleteContact={(contact) => {
+                      setSelectedContact(contact);
+                      setIsDeleteDialogOpen(true);
+                    }}
+                    onViewDetails={(contact) => {
+                      // View details logic
+                      toast({
+                        title: "View Contact",
+                        description: `Viewing ${contact.fullName}'s details`,
+                      });
+                    }}
+                    isRevealingEmail={isRevealingEmail}
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-16">
+                    <div className="flex flex-col items-center justify-center mb-4">
+                      <Search className="h-12 w-12 text-gray-300 mb-2" />
+                      <h3 className="text-lg font-medium">End of Results</h3>
+                    </div>
+                    <p className="text-gray-500 text-center mb-6">
+                      Find more Contacts from our search in the left navigation, or simply click on one of our search starters.
+                    </p>
+                    <Button variant="primary" size="sm">
+                      Reset all Filters
+                    </Button>
+                    
+                    <div className="mt-8 flex items-center rounded-md bg-blue-50 px-3 py-2">
+                      <span className="text-sm">
+                        Show me contacts who are: 
+                        <Badge className="ml-2 mr-1 bg-gray-200 text-gray-800">Senior</Badge>in
+                        <Badge className="mx-1 bg-gray-200 text-gray-800">Finance</Badge>
+                      </span>
+                    </div>
+                  </div>
+                )}
+                
+                {filteredContacts.length > 0 && (
+                  <div className="flex items-center justify-between border-t p-3">
+                    <div className="flex items-center space-x-1">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="text-sm"
+                      >
+                        <ArrowLeft className="h-4 w-4 mr-1" /> Previous
+                      </Button>
+                      
+                      <div className="px-2">
+                        <span className="text-sm">{currentPage}</span>
+                      </div>
+                      
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className="text-sm"
+                      >
+                        Next <ArrowRight className="h-4 w-4 ml-1" />
+                      </Button>
+                    </div>
+                    
+                    <div className="text-sm">
+                      Jump to page: 
+                      <Input 
+                        type="number" 
+                        min={1} 
+                        max={totalPages} 
+                        value={currentPage}
+                        onChange={(e) => {
+                          const page = parseInt(e.target.value);
+                          if (page >= 1 && page <= totalPages) {
+                            handlePageChange(page);
+                          }
+                        }}
+                        className="w-16 h-8 ml-2 inline-block"
+                      />
+                    </div>
+                  </div>
                 )}
               </div>
-              
-              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Plus size={16} className="mr-2" /> Add Contact
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-xl">
-                  <DialogHeader>
-                    <DialogTitle>Add New Contact</DialogTitle>
-                    <DialogDescription>
-                      Create a new contact in your CRM system
-                    </DialogDescription>
-                  </DialogHeader>
-                  
-                  <ContactForm 
-                    form={form} 
-                    companies={companiesData?.companies || []}
-                    onSubmit={(data) => createContactMutation.mutate(data)}
-                    isSubmitting={createContactMutation.isPending}
-                  />
-                </DialogContent>
-              </Dialog>
-            </div>
-          </div>
-        </CardHeader>
-        
-        <CardContent>
-          {isLoading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
-            </div>
-          ) : filteredContacts?.length > 0 ? (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Job Title</TableHead>
-                    <TableHead>Company</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Location</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredContacts.map((contact: Contact) => (
-                    <TableRow key={contact.id}>
-                      <TableCell>
-                        <div className="flex items-center">
-                          <Avatar className="h-8 w-8 mr-3">
-                            <AvatarFallback className={getAvatarColor(contact.fullName)}>
-                              {getInitials(contact.fullName)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="font-medium">{contact.fullName}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>{contact.jobTitle || "-"}</TableCell>
-                      <TableCell>{getCompanyName(contact.companyId)}</TableCell>
-                      <TableCell>{contact.email || "-"}</TableCell>
-                      <TableCell>{contact.location || "-"}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end space-x-1">
-                          <Button 
-                            variant="ghost" 
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => handleGenerateAIMessage(contact)}
-                          >
-                            <Bot size={16} className="text-neutral-500" />
-                          </Button>
-                          
-                          <Button 
-                            variant="ghost" 
-                            size="icon"
-                            className="h-8 w-8"
-                            asChild
-                          >
-                            <a href={`mailto:${contact.email}`} target="_blank" rel="noreferrer">
-                              <Mail size={16} className="text-neutral-500" />
-                            </a>
-                          </Button>
-                          
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <MoreHorizontal size={16} className="text-neutral-500" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => setSelectedContact(contact)}>
-                                <Edit className="mr-2 h-4 w-4" />
-                                <span>Edit Contact</span>
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => {
-                                setSelectedContact(contact);
-                                setIsDeleteDialogOpen(true);
-                              }}>
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                <span>Delete Contact</span>
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <FileText className="mr-2 h-4 w-4" />
-                                <span>View Details</span>
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-neutral-500">No contacts found</p>
-              {searchTerm && (
-                <Button 
-                  variant="link" 
-                  onClick={() => setSearchTerm("")}
-                  className="mt-2"
-                >
-                  Clear search
-                </Button>
-              )}
-            </div>
-          )}
-        </CardContent>
-        
-        <CardFooter className="flex justify-between border-t p-4">
-          <div className="text-sm text-neutral-500">
-            Showing {filteredContacts?.length || 0} of {data?.contacts?.length || 0} contacts
-          </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+      
+      {/* Create Contact Dialog */}
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Add New Contact</DialogTitle>
+            <DialogDescription>
+              Create a new contact in your CRM system
+            </DialogDescription>
+          </DialogHeader>
           
-          <Button variant="outline" size="sm">
-            <Download size={14} className="mr-1" /> Export Contacts
-          </Button>
-        </CardFooter>
-      </Card>
+          <ContactForm 
+            form={form} 
+            companies={companiesData?.companies || []}
+            onSubmit={(data) => createContactMutation.mutate(data)}
+            isSubmitting={createContactMutation.isPending}
+          />
+        </DialogContent>
+      </Dialog>
+      
+      {/* Edit Contact Dialog */}
+      {selectedContact && !isDeleteDialogOpen && (
+        <Dialog 
+          open={!!selectedContact && !isDeleteDialogOpen} 
+          onOpenChange={(open) => !open && setSelectedContact(null)}
+        >
+          <DialogContent className="max-w-xl">
+            <DialogHeader>
+              <DialogTitle>Edit Contact</DialogTitle>
+              <DialogDescription>
+                Update this contact's information
+              </DialogDescription>
+            </DialogHeader>
+            
+            <ContactForm 
+              form={form} 
+              companies={companiesData?.companies || []}
+              onSubmit={(data) => updateContactMutation.mutate({ id: selectedContact.id, contact: data })}
+              isSubmitting={updateContactMutation.isPending}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
+      
+      {/* Delete Contact Dialog */}
+      {selectedContact && (
+        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete Contact</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete this contact? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={() => deleteContactMutation.mutate(selectedContact.id)}
+                disabled={deleteContactMutation.isPending}
+              >
+                {deleteContactMutation.isPending ? "Deleting..." : "Delete"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
       
       {/* Edit Contact Dialog */}
       {selectedContact && (

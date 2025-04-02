@@ -8,7 +8,7 @@ import Login from "@/pages/login";
 import Signup from "@/pages/signup";
 import Dashboard from "@/pages/dashboard";
 import EnrichPage from "@/pages/dashboard/enrich";
-import ContactsPage from "@/pages/dashboard/contacts";
+import ContactsPage from "@/pages/dashboard/contacts-new";
 import CompaniesPage from "@/pages/dashboard/companies";
 import AiWriterPage from "@/pages/dashboard/ai-writer";
 import ContactListPage from "@/pages/dashboard/contact-list";
