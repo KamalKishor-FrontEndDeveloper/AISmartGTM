@@ -31,7 +31,8 @@ import {
   ArrowLeft,
   ArrowRight,
   Grid,
-  Menu as MenuIcon
+  Menu as MenuIcon,
+  Linkedin
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -309,7 +310,7 @@ export default function ContactsNewPage() {
       id: contact.id,
       fullName: contact.fullName,
       jobTitle: contact.jobTitle || "",
-      companyName: companiesData?.companies.find(c => c.id === contact.companyId)?.name || ""
+      companyName: companiesData?.companies.find((c: any) => c.id === contact.companyId)?.name || ""
     }));
     window.location.href = `/dashboard/ai-writer?contact=${contactParams}`;
   };
@@ -604,7 +605,7 @@ export default function ContactsNewPage() {
             <div className="space-y-4 py-4">
               <div className="flex items-start space-x-4">
                 <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
-                  <LinkedinIcon className="h-6 w-6 text-white" />
+                  <Linkedin className="h-6 w-6 text-white" />
                 </div>
                 <div>
                   <h4 className="font-medium">{selectedContact.fullName}</h4>
