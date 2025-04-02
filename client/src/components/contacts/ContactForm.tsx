@@ -103,8 +103,14 @@ export default function ContactForm({
               <FormItem>
                 <FormLabel>Company</FormLabel>
                 <Select 
-                  onValueChange={(value) => field.onChange(value ? parseInt(value) : '')}
-                  value={field.value?.toString() || ''}
+                  onValueChange={(value) => {
+                    if (value === 'none') {
+                      field.onChange(undefined);
+                    } else {
+                      field.onChange(parseInt(value));
+                    }
+                  }}
+                  value={field.value?.toString() || 'none'}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -112,7 +118,7 @@ export default function ContactForm({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {companies.map((company) => (
                       <SelectItem key={company.id} value={company.id.toString()}>
                         {company.name}
