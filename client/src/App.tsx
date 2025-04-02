@@ -12,6 +12,7 @@ import ContactsPage from "@/pages/dashboard/contacts";
 import CompaniesPage from "@/pages/dashboard/companies";
 import AiWriterPage from "@/pages/dashboard/ai-writer";
 import ContactListPage from "@/pages/dashboard/contact-list";
+import CRMIntegrationsPage from "@/pages/dashboard/crm-integrations";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 
 function ProtectedRoute({ component: Component, ...rest }: any) {
@@ -66,6 +67,12 @@ function Router() {
       <Route path="/dashboard/contact-list" component={() => (
         <DashboardLayout>
           <ProtectedRoute component={ContactListPage} />
+        </DashboardLayout>
+      )} />
+      
+      <Route path="/dashboard/crm-integrations" component={() => (
+        <DashboardLayout>
+          <ProtectedRoute component={CRMIntegrationsPage} />
         </DashboardLayout>
       )} />
       

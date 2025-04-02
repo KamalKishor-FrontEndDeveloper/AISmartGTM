@@ -9,7 +9,8 @@ import {
   ListChecks, 
   BarChart3, 
   HelpCircle,
-  FileText
+  FileText,
+  Database
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -77,6 +78,11 @@ export default function Sidebar({ isOpen }: { isOpen: boolean }) {
       href: "/dashboard/ai-writer",
       label: "AI Writer",
       icon: <Bot size={18} className="w-5" />,
+    },
+    {
+      href: "/dashboard/crm-integrations",
+      label: "CRM Integrations",
+      icon: <Database size={18} className="w-5" />,
     },
     {
       href: "/dashboard/contact-list",

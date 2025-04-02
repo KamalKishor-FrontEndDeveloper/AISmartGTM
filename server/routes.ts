@@ -13,6 +13,21 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 import { generateMessage, MessagePurpose, MessageTone } from "./services/gemini";
+import { 
+  testSalesforceConnection, 
+  importContactsFromSalesforce, 
+  importCompaniesFromSalesforce,
+  exportContactsToSalesforce,
+  exportCompaniesToSalesforce 
+} from "./services/crm/salesforce";
+import { 
+  testHubspotConnection, 
+  importContactsFromHubspot, 
+  importCompaniesFromHubspot,
+  exportContactsToHubspot,
+  exportCompaniesToHubspot 
+} from "./services/crm/hubspot";
+import { CRMType, CRMConnectionStatus } from "./services/crm/index";
 
 const SESSION_SECRET = process.env.SESSION_SECRET || "your-secret-key";
 const MOCK_VERIFICATION_CODE = "123456"; // For demonstration purposes only
@@ -469,6 +484,344 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error generating AI message:", error);
       return res.status(500).json({ message: "Failed to generate message. Please try again." });
+    }
+  });
+
+  // CRM INTEGRATION ROUTES
+  // Connection status routes
+  app.get("/api/crm/connection/status", authenticateRequest, async (req, res) => {
+    try {
+      // Check status of both CRM systems
+      const [salesforceStatus, hubspotStatus] = await Promise.all([
+        testSalesforceConnection().catch(err => ({
+          success: false,
+          message: `Salesforce connection error: ${err.message || "Unknown error"}`
+        })),
+        testHubspotConnection().catch(err => ({
+          success: false,
+          message: `HubSpot connection error: ${err.message || "Unknown error"}`
+        }))
+      ]);
+      
+      const connections: CRMConnectionStatus[] = [
+        {
+          type: CRMType.Salesforce,
+          connected: salesforceStatus.success,
+          message: salesforceStatus.message
+        },
+        {
+          type: CRMType.HubSpot,
+          connected: hubspotStatus.success,
+          message: hubspotStatus.message
+        }
+      ];
+      
+      return res.status(200).json({ connections });
+    } catch (error) {
+      console.error("Error checking CRM connections:", error);
+      return res.status(500).json({ message: "Failed to check CRM connections" });
+    }
+  });
+  
+  // Import contacts routes
+  app.post("/api/crm/import/contacts", authenticateRequest, async (req, res) => {
+    try {
+      const user = (req as any).user;
+      const { source } = req.body;
+      
+      if (!source || !Object.values(CRMType).includes(source)) {
+        return res.status(400).json({ message: "Valid CRM source is required" });
+      }
+      
+      // Check if user has enough credits
+      const importCost = 10; // Credits per import operation
+      const updatedCredits = await storage.useCredits(
+        user.id, 
+        importCost, 
+        `Import contacts from ${source}`
+      );
+      
+      if (updatedCredits === null) {
+        return res.status(400).json({ message: "Insufficient credits" });
+      }
+      
+      let importedContacts = [];
+      
+      if (source === CRMType.Salesforce) {
+        const sfContacts = await importContactsFromSalesforce();
+        
+        // Save contacts to database
+        for (const contact of sfContacts) {
+          await storage.createContact({
+            ...contact,
+            userId: user.id,
+            tags: ["Salesforce Import"]
+          });
+        }
+        
+        importedContacts = sfContacts;
+      } else if (source === CRMType.HubSpot) {
+        const hsContacts = await importContactsFromHubspot();
+        
+        // Save contacts to database
+        for (const contact of hsContacts) {
+          await storage.createContact({
+            ...contact,
+            userId: user.id,
+            tags: ["HubSpot Import"]
+          });
+        }
+        
+        importedContacts = hsContacts;
+      }
+      
+      return res.status(200).json({
+        message: `Successfully imported ${importedContacts.length} contacts from ${source}`,
+        count: importedContacts.length,
+        creditsUsed: importCost,
+        creditsRemaining: updatedCredits
+      });
+    } catch (error) {
+      console.error("Error importing contacts:", error);
+      return res.status(500).json({ message: "Failed to import contacts" });
+    }
+  });
+  
+  // Import companies routes
+  app.post("/api/crm/import/companies", authenticateRequest, async (req, res) => {
+    try {
+      const user = (req as any).user;
+      const { source } = req.body;
+      
+      if (!source || !Object.values(CRMType).includes(source)) {
+        return res.status(400).json({ message: "Valid CRM source is required" });
+      }
+      
+      // Check if user has enough credits
+      const importCost = 10; // Credits per import operation
+      const updatedCredits = await storage.useCredits(
+        user.id, 
+        importCost, 
+        `Import companies from ${source}`
+      );
+      
+      if (updatedCredits === null) {
+        return res.status(400).json({ message: "Insufficient credits" });
+      }
+      
+      let importedCompanies = [];
+      
+      if (source === CRMType.Salesforce) {
+        const sfCompanies = await importCompaniesFromSalesforce();
+        
+        // Save companies to database
+        for (const company of sfCompanies) {
+          await storage.createCompany({
+            ...company,
+            userId: user.id
+          });
+        }
+        
+        importedCompanies = sfCompanies;
+      } else if (source === CRMType.HubSpot) {
+        const hsCompanies = await importCompaniesFromHubspot();
+        
+        // Save companies to database
+        for (const company of hsCompanies) {
+          await storage.createCompany({
+            ...company,
+            userId: user.id
+          });
+        }
+        
+        importedCompanies = hsCompanies;
+      }
+      
+      return res.status(200).json({
+        message: `Successfully imported ${importedCompanies.length} companies from ${source}`,
+        count: importedCompanies.length,
+        creditsUsed: importCost,
+        creditsRemaining: updatedCredits
+      });
+    } catch (error) {
+      console.error("Error importing companies:", error);
+      return res.status(500).json({ message: "Failed to import companies" });
+    }
+  });
+  
+  // Export contacts routes
+  app.post("/api/crm/export/contacts", authenticateRequest, async (req, res) => {
+    try {
+      const user = (req as any).user;
+      const { destination, contactIds } = req.body;
+      
+      if (!destination || !Object.values(CRMType).includes(destination)) {
+        return res.status(400).json({ message: "Valid CRM destination is required" });
+      }
+      
+      if (!contactIds || !Array.isArray(contactIds) || contactIds.length === 0) {
+        return res.status(400).json({ message: "At least one contact ID is required" });
+      }
+      
+      // Check if user has enough credits
+      const exportCost = 5; // Credits per export operation
+      const updatedCredits = await storage.useCredits(
+        user.id, 
+        exportCost, 
+        `Export contacts to ${destination}`
+      );
+      
+      if (updatedCredits === null) {
+        return res.status(400).json({ message: "Insufficient credits" });
+      }
+      
+      // Get contacts to export
+      const contacts = [];
+      for (const id of contactIds) {
+        const contact = await storage.getContact(id);
+        if (contact && contact.userId === user.id) {
+          contacts.push(contact);
+        }
+      }
+      
+      if (contacts.length === 0) {
+        return res.status(400).json({ message: "No valid contacts found to export" });
+      }
+      
+      let exportResult;
+      
+      if (destination === CRMType.Salesforce) {
+        exportResult = await exportContactsToSalesforce(contacts);
+        
+        // Update contacts with Salesforce IDs
+        if (exportResult.success) {
+          for (let i = 0; i < contacts.length; i++) {
+            if (exportResult.results[i] && exportResult.results[i].success) {
+              await storage.updateContact(contacts[i].id, {
+                salesforceId: exportResult.results[i].id,
+                crmSource: 'salesforce',
+                crmLastSynced: new Date()
+              });
+            }
+          }
+        }
+      } else if (destination === CRMType.HubSpot) {
+        exportResult = await exportContactsToHubspot(contacts);
+        
+        // Update contacts with HubSpot IDs
+        if (exportResult.success) {
+          for (let i = 0; i < contacts.length; i++) {
+            if (exportResult.results[i] && exportResult.results[i].success) {
+              await storage.updateContact(contacts[i].id, {
+                hubspotId: exportResult.results[i].result.vid.toString(),
+                crmSource: 'hubspot',
+                crmLastSynced: new Date()
+              });
+            }
+          }
+        }
+      }
+      
+      return res.status(200).json({
+        success: exportResult?.success || false,
+        message: exportResult?.success 
+          ? `Successfully exported ${contacts.length} contacts to ${destination}` 
+          : `Failed to export some or all contacts to ${destination}`,
+        results: exportResult?.results,
+        creditsUsed: exportCost,
+        creditsRemaining: updatedCredits
+      });
+    } catch (error) {
+      console.error("Error exporting contacts:", error);
+      return res.status(500).json({ message: "Failed to export contacts" });
+    }
+  });
+  
+  // Export companies routes
+  app.post("/api/crm/export/companies", authenticateRequest, async (req, res) => {
+    try {
+      const user = (req as any).user;
+      const { destination, companyIds } = req.body;
+      
+      if (!destination || !Object.values(CRMType).includes(destination)) {
+        return res.status(400).json({ message: "Valid CRM destination is required" });
+      }
+      
+      if (!companyIds || !Array.isArray(companyIds) || companyIds.length === 0) {
+        return res.status(400).json({ message: "At least one company ID is required" });
+      }
+      
+      // Check if user has enough credits
+      const exportCost = 5; // Credits per export operation
+      const updatedCredits = await storage.useCredits(
+        user.id, 
+        exportCost, 
+        `Export companies to ${destination}`
+      );
+      
+      if (updatedCredits === null) {
+        return res.status(400).json({ message: "Insufficient credits" });
+      }
+      
+      // Get companies to export
+      const companies = [];
+      for (const id of companyIds) {
+        const company = await storage.getCompany(id);
+        if (company && company.userId === user.id) {
+          companies.push(company);
+        }
+      }
+      
+      if (companies.length === 0) {
+        return res.status(400).json({ message: "No valid companies found to export" });
+      }
+      
+      let exportResult;
+      
+      if (destination === CRMType.Salesforce) {
+        exportResult = await exportCompaniesToSalesforce(companies);
+        
+        // Update companies with Salesforce IDs
+        if (exportResult.success) {
+          for (let i = 0; i < companies.length; i++) {
+            if (exportResult.results[i] && exportResult.results[i].success) {
+              await storage.updateCompany(companies[i].id, {
+                salesforceId: exportResult.results[i].id,
+                crmSource: 'salesforce',
+                crmLastSynced: new Date()
+              });
+            }
+          }
+        }
+      } else if (destination === CRMType.HubSpot) {
+        exportResult = await exportCompaniesToHubspot(companies);
+        
+        // Update companies with HubSpot IDs
+        if (exportResult.success) {
+          for (let i = 0; i < companies.length; i++) {
+            if (exportResult.results[i] && exportResult.results[i].success) {
+              await storage.updateCompany(companies[i].id, {
+                hubspotId: exportResult.results[i].result.companyId.toString(),
+                crmSource: 'hubspot',
+                crmLastSynced: new Date()
+              });
+            }
+          }
+        }
+      }
+      
+      return res.status(200).json({
+        success: exportResult?.success || false,
+        message: exportResult?.success 
+          ? `Successfully exported ${companies.length} companies to ${destination}` 
+          : `Failed to export some or all companies to ${destination}`,
+        results: exportResult?.results,
+        creditsUsed: exportCost,
+        creditsRemaining: updatedCredits
+      });
+    } catch (error) {
+      console.error("Error exporting companies:", error);
+      return res.status(500).json({ message: "Failed to export companies" });
     }
   });
 

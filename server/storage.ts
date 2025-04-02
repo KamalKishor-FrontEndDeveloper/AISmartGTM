@@ -87,15 +87,82 @@ export class MemStorage implements IStorage {
     this.createUser(demoUser).then(user => {
       // Add some companies
       const companies = [
-        { name: "TechCorp Inc.", industry: "Technology", website: "https://techcorp.example.com", size: "500-1000", location: "San Francisco, CA", description: "Leading tech company" },
-        { name: "InnovateSoft", industry: "Software", website: "https://innovatesoft.example.com", size: "100-500", location: "Austin, TX", description: "Innovative software solutions" },
-        { name: "GlobalFinance Ltd.", industry: "Finance", website: "https://globalfinance.example.com", size: "1000+", location: "New York, NY", description: "Global financial services" }
+        { 
+          name: "TechCorp Inc.", 
+          industry: "Technology", 
+          website: "https://techcorp.example.com", 
+          size: "500-1000", 
+          location: "San Francisco, CA", 
+          description: "Leading tech company",
+          phone: "+1 (415) 555-1234",
+          // Some sample CRM data
+          salesforceId: "0015f00000MxdzAAC",
+          isImported: true,
+          crmSource: "salesforce",
+          crmLastSynced: new Date()
+        },
+        { 
+          name: "InnovateSoft", 
+          industry: "Software", 
+          website: "https://innovatesoft.example.com", 
+          size: "100-500", 
+          location: "Austin, TX", 
+          description: "Innovative software solutions",
+          phone: "+1 (512) 555-6789"
+        },
+        { 
+          name: "GlobalFinance Ltd.", 
+          industry: "Finance", 
+          website: "https://globalfinance.example.com", 
+          size: "1000+", 
+          location: "New York, NY", 
+          description: "Global financial services",
+          phone: "+1 (212) 555-4321",
+          // Some sample CRM data
+          hubspotId: "987654321",
+          isImported: true,
+          crmSource: "hubspot",
+          crmLastSynced: new Date()
+        }
       ];
       
       companies.forEach(company => {
         this.createCompany({
           userId: user.id,
           ...company
+        });
+      });
+      
+      // Add some contacts with CRM integration data
+      const contacts = [
+        {
+          fullName: "John Smith",
+          email: "john.smith@techcorp.example.com",
+          phone: "+1 (415) 555-9876",
+          jobTitle: "CTO",
+          location: "San Francisco, CA",
+          tags: ["Lead", "Tech"],
+          salesforceId: "00Q5f00000MxdzBBR",
+          isImported: true,
+          crmSource: "salesforce"
+        },
+        {
+          fullName: "Maria Garcia",
+          email: "m.garcia@globalf.example.com",
+          phone: "+1 (212) 555-6543",
+          jobTitle: "CFO",
+          location: "New York, NY",
+          tags: ["VIP", "Finance"],
+          hubspotId: "123456789",
+          isImported: true,
+          crmSource: "hubspot"
+        }
+      ];
+      
+      contacts.forEach(contact => {
+        this.createContact({
+          userId: user.id,
+          ...contact
         });
       });
     });
@@ -190,6 +257,14 @@ export class MemStorage implements IStorage {
       notes: insertContact.notes ?? null,
       tags: insertContact.tags ?? [],
       isEnriched: insertContact.isEnriched ?? false,
+      
+      // CRM integration fields
+      salesforceId: insertContact.salesforceId ?? null,
+      hubspotId: insertContact.hubspotId ?? null,
+      isImported: insertContact.isImported ?? false,
+      crmSource: insertContact.crmSource ?? null,
+      crmLastSynced: insertContact.crmLastSynced ?? null,
+      
       createdAt: now
     };
     
@@ -235,6 +310,15 @@ export class MemStorage implements IStorage {
       size: insertCompany.size ?? null,
       location: insertCompany.location ?? null,
       description: insertCompany.description ?? null,
+      phone: insertCompany.phone ?? null,
+      
+      // CRM integration fields
+      salesforceId: insertCompany.salesforceId ?? null,
+      hubspotId: insertCompany.hubspotId ?? null,
+      isImported: insertCompany.isImported ?? false,
+      crmSource: insertCompany.crmSource ?? null,
+      crmLastSynced: insertCompany.crmLastSynced ?? null,
+      
       createdAt: now
     };
     
@@ -384,7 +468,11 @@ export class MemStorage implements IStorage {
         location: sample.location,
         linkedInUrl: sample.linkedInUrl,
         isEnriched: sample.isEnriched || false,
-        tags: sample.tags || []
+        tags: sample.tags || [],
+        // CRM data for search results
+        salesforceId: sample.id ? `00Q5f00000SearchXXX${sample.id}` : null,
+        isImported: false,
+        crmSource: null
       };
       
       const savedContact = await this.createContact(contact);

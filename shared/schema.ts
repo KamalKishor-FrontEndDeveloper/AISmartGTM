@@ -32,6 +32,12 @@ export const contacts = pgTable("contacts", {
   notes: text("notes"),
   tags: text("tags").array(),
   isEnriched: boolean("is_enriched").default(false),
+  // CRM integration fields
+  salesforceId: text("salesforce_id"),
+  hubspotId: text("hubspot_id"),
+  isImported: boolean("is_imported").default(false),
+  crmSource: text("crm_source"), // 'salesforce', 'hubspot', or null
+  crmLastSynced: timestamp("crm_last_synced"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -45,6 +51,13 @@ export const companies = pgTable("companies", {
   size: text("size"),
   location: text("location"),
   description: text("description"),
+  phone: text("phone"),
+  // CRM integration fields
+  salesforceId: text("salesforce_id"),
+  hubspotId: text("hubspot_id"),
+  isImported: boolean("is_imported").default(false),
+  crmSource: text("crm_source"), // 'salesforce', 'hubspot', or null
+  crmLastSynced: timestamp("crm_last_synced"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
