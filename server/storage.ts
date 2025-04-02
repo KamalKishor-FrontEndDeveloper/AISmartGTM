@@ -76,7 +76,7 @@ export class MemStorage implements IStorage {
     const demoUser: InsertUser = {
       fullName: "Demo User",
       email: "demo@example.com",
-      password: "$2a$10$demohashedpassword", // In a real app this would be properly hashed
+      password: "$2b$10$e.oPe0CQEYRnUMJLhqwOa.9W3dAGUbdCu4XUKWjNiQX5MFbTuW1Ne", // "password123"
       credits: 125,
       verified: true,
       companyName: "Demo Corp",
@@ -85,6 +85,9 @@ export class MemStorage implements IStorage {
     };
     
     this.createUser(demoUser).then(user => {
+      // Add LinkedIn Sales Navigator sample data
+      this.addSampleLinkedInData(user.id);
+      
       // Add some companies
       const companies = [
         { 
@@ -251,6 +254,7 @@ export class MemStorage implements IStorage {
       phone: insertContact.phone ?? null,
       jobTitle: insertContact.jobTitle ?? null,
       companyId: insertContact.companyId ?? null,
+      companyName: insertContact.companyName ?? null,
       location: insertContact.location ?? null,
       linkedInUrl: insertContact.linkedInUrl ?? null,
       lastContacted: insertContact.lastContacted ?? null,
@@ -258,12 +262,31 @@ export class MemStorage implements IStorage {
       tags: insertContact.tags ?? [],
       isEnriched: insertContact.isEnriched ?? false,
       
+      // LinkedIn Sales Navigator fields
+      linkedinId: insertContact.linkedinId ?? null,
+      connectionDegree: insertContact.connectionDegree ?? null,
+      profileImageUrl: insertContact.profileImageUrl ?? null,
+      sharedConnections: insertContact.sharedConnections ?? null,
+      isOpenToWork: insertContact.isOpenToWork ?? false,
+      lastActive: insertContact.lastActive ?? null,
+      
+      // Enrichment status
+      emailVerified: insertContact.emailVerified ?? false,
+      enrichmentSource: insertContact.enrichmentSource ?? null,
+      enrichmentDate: insertContact.enrichmentDate ?? null,
+      
       // CRM integration fields
       salesforceId: insertContact.salesforceId ?? null,
       hubspotId: insertContact.hubspotId ?? null,
       isImported: insertContact.isImported ?? false,
       crmSource: insertContact.crmSource ?? null,
       crmLastSynced: insertContact.crmLastSynced ?? null,
+      
+      // Connection/outreach status
+      connectionSent: insertContact.connectionSent ?? false,
+      connectionSentDate: insertContact.connectionSentDate ?? null,
+      messageSent: insertContact.messageSent ?? false,
+      messageSentDate: insertContact.messageSentDate ?? null,
       
       createdAt: now
     };
@@ -311,6 +334,20 @@ export class MemStorage implements IStorage {
       location: insertCompany.location ?? null,
       description: insertCompany.description ?? null,
       phone: insertCompany.phone ?? null,
+      
+      // LinkedIn Sales Navigator fields
+      linkedinId: insertCompany.linkedinId ?? null,
+      linkedinUrl: insertCompany.linkedinUrl ?? null,
+      employeeCount: insertCompany.employeeCount ?? null,
+      foundedYear: insertCompany.foundedYear ?? null,
+      specialties: insertCompany.specialties ?? [],
+      logoUrl: insertCompany.logoUrl ?? null,
+      followers: insertCompany.followers ?? null,
+      
+      // Enrichment status
+      isEnriched: insertCompany.isEnriched ?? false,
+      enrichmentSource: insertCompany.enrichmentSource ?? null,
+      enrichmentDate: insertCompany.enrichmentDate ?? null,
       
       // CRM integration fields
       salesforceId: insertCompany.salesforceId ?? null,
@@ -505,6 +542,246 @@ export class MemStorage implements IStorage {
     // In a real implementation, this would be handled by the database
     
     return true;
+  }
+  
+  private async addSampleLinkedInData(userId: number): Promise<void> {
+    // Add sample companies first
+    const companies: Partial<InsertCompany>[] = [
+      {
+        userId,
+        name: "TechCore Innovations",
+        industry: "Software Development",
+        website: "https://techcore.com",
+        size: "201-500",
+        location: "San Francisco, CA",
+        description: "Leading software development company specializing in enterprise solutions",
+        linkedinId: "techcore-innovations-123456",
+        linkedinUrl: "https://linkedin.com/company/techcore-innovations",
+        employeeCount: 345,
+        foundedYear: 2010,
+        specialties: ["Enterprise Software", "Cloud Solutions", "AI"],
+        logoUrl: "https://example.com/logos/techcore.png",
+        followers: 15760
+      },
+      {
+        userId,
+        name: "FinEdge Financial Solutions",
+        industry: "Financial Services",
+        website: "https://finedge.com",
+        size: "501-1000",
+        location: "New York, NY",
+        description: "Innovative financial services company",
+        linkedinId: "finedge-financial-789012",
+        linkedinUrl: "https://linkedin.com/company/finedge-financial",
+        employeeCount: 780,
+        foundedYear: 2006,
+        specialties: ["Fintech", "Wealth Management", "Investment Banking"],
+        logoUrl: "https://example.com/logos/finedge.png",
+        followers: 32450
+      },
+      {
+        userId,
+        name: "HealthFirst Medical Solutions",
+        industry: "Healthcare",
+        website: "https://healthfirst.org",
+        size: "1001-5000",
+        location: "Boston, MA",
+        description: "Healthcare technology and services provider",
+        linkedinId: "healthfirst-med-345678",
+        linkedinUrl: "https://linkedin.com/company/healthfirst-medical",
+        employeeCount: 2300,
+        foundedYear: 1999,
+        specialties: ["Healthcare IT", "Medical Services", "Telehealth"],
+        logoUrl: "https://example.com/logos/healthfirst.png",
+        followers: 48900
+      }
+    ];
+    
+    const createdCompanies: Company[] = [];
+    for (const companyData of companies) {
+      // @ts-ignore - TypeScript doesn't know we'll add all required fields
+      const company = await this.createCompany(companyData);
+      createdCompanies.push(company);
+    }
+    
+    // Now add contacts with references to the companies
+    const contacts: Partial<InsertContact>[] = [
+      {
+        userId,
+        fullName: "Dr. Kavneet Kaur Sodhi",
+        email: "kavneet.sodhi@healthfirst.org",
+        jobTitle: "Human Resources Specialist",
+        companyId: createdCompanies[2].id,
+        companyName: "HealthFirst Medical Solutions",
+        location: "Boston, MA",
+        linkedInUrl: "https://linkedin.com/in/kavneet-sodhi",
+        tags: ["Healthcare", "HR"],
+        linkedinId: "kavneet-sodhi-123", 
+        connectionDegree: "2nd",
+        profileImageUrl: "https://example.com/profiles/kavneet.jpg",
+        sharedConnections: 5,
+        isOpenToWork: false,
+        lastActive: "2 weeks ago"
+      },
+      {
+        userId,
+        fullName: "Tamanna Aggarwal",
+        email: "t.aggarwal@techcore.com",
+        jobTitle: "Business Development Manager",
+        companyId: createdCompanies[0].id,
+        companyName: "TechCore Innovations",
+        location: "San Francisco, CA",
+        linkedInUrl: "https://linkedin.com/in/tamanna-aggarwal",
+        tags: ["Tech", "Sales"],
+        linkedinId: "tamanna-aggarwal-456", 
+        connectionDegree: "3rd",
+        profileImageUrl: "https://example.com/profiles/tamanna.jpg",
+        sharedConnections: 2,
+        isOpenToWork: false,
+        lastActive: "3 days ago"
+      },
+      {
+        userId,
+        fullName: "Sweta S.",
+        email: "s.sweta@finedge.com",
+        jobTitle: "Associate Developer",
+        companyId: createdCompanies[1].id,
+        companyName: "FinEdge Financial Solutions",
+        location: "New York, NY",
+        linkedInUrl: "https://linkedin.com/in/sweta-s",
+        tags: ["Finance", "Development"],
+        linkedinId: "sweta-s-789", 
+        connectionDegree: "2nd",
+        profileImageUrl: "https://example.com/profiles/sweta.jpg",
+        sharedConnections: 8,
+        isOpenToWork: false,
+        lastActive: "1 week ago"
+      },
+      {
+        userId,
+        fullName: "Rohit Singh",
+        email: "rohit.singh@techcore.com",
+        jobTitle: "Business Development Manager",
+        companyId: createdCompanies[0].id,
+        companyName: "TechCore Innovations",
+        location: "San Francisco, CA",
+        linkedInUrl: "https://linkedin.com/in/rohit-singh",
+        tags: ["Tech", "Business"],
+        linkedinId: "rohit-singh-101", 
+        connectionDegree: "1st",
+        profileImageUrl: "https://example.com/profiles/rohit.jpg",
+        sharedConnections: 15,
+        isOpenToWork: false,
+        lastActive: "5 days ago"
+      },
+      {
+        userId,
+        fullName: "Rita Tulsaney",
+        email: null,
+        jobTitle: "Executive Director",
+        companyId: createdCompanies[2].id,
+        companyName: "HealthFirst Medical Solutions",
+        location: "Boston, MA",
+        linkedInUrl: "https://linkedin.com/in/rita-tulsaney",
+        tags: ["Healthcare", "Executive"],
+        linkedinId: "rita-tulsaney-202", 
+        connectionDegree: "3rd+",
+        profileImageUrl: "https://example.com/profiles/rita.jpg",
+        sharedConnections: 0,
+        isOpenToWork: false,
+        lastActive: "1 month ago"
+      },
+      {
+        userId,
+        fullName: "Rinku Raghuwanshi",
+        email: null,
+        jobTitle: "Sr. Software Developer",
+        companyId: createdCompanies[0].id,
+        companyName: "TechCore Innovations",
+        location: "San Francisco, CA",
+        linkedInUrl: "https://linkedin.com/in/rinku-raghuwanshi",
+        tags: ["Tech", "Engineering"],
+        linkedinId: "rinku-raghuwanshi-303", 
+        connectionDegree: "2nd",
+        profileImageUrl: "https://example.com/profiles/rinku.jpg",
+        sharedConnections: 7,
+        isOpenToWork: true,
+        lastActive: "2 days ago"
+      },
+      {
+        userId,
+        fullName: "Yogesh Sharma",
+        email: "y.sharma@finedge.com",
+        jobTitle: "Vice President of Sales",
+        companyId: createdCompanies[1].id,
+        companyName: "FinEdge Financial Solutions",
+        location: "New York, NY",
+        linkedInUrl: "https://linkedin.com/in/yogesh-sharma",
+        tags: ["Finance", "Sales"],
+        linkedinId: "yogesh-sharma-404", 
+        connectionDegree: "2nd",
+        profileImageUrl: "https://example.com/profiles/yogesh.jpg",
+        sharedConnections: 12,
+        isOpenToWork: false,
+        lastActive: "Just now"
+      },
+      {
+        userId,
+        fullName: "Vivek Singh",
+        email: "vivek.singh@healthfirst.org",
+        jobTitle: "Lead Generation Executive",
+        companyId: createdCompanies[2].id,
+        companyName: "HealthFirst Medical Solutions",
+        location: "Boston, MA",
+        linkedInUrl: "https://linkedin.com/in/vivek-singh",
+        tags: ["Healthcare", "Marketing"],
+        linkedinId: "vivek-singh-505", 
+        connectionDegree: "1st",
+        profileImageUrl: "https://example.com/profiles/vivek.jpg",
+        sharedConnections: 25,
+        isOpenToWork: false,
+        lastActive: "Yesterday"
+      },
+      {
+        userId,
+        fullName: "Kamal Kishor",
+        email: "kamal.kishor@techcore.com",
+        jobTitle: "Product Manager",
+        companyId: createdCompanies[0].id,
+        companyName: "TechCore Innovations",
+        location: "San Francisco, CA",
+        linkedInUrl: "https://linkedin.com/in/kamal-kishor",
+        tags: ["Tech", "Product"],
+        linkedinId: "kamal-kishor-606", 
+        connectionDegree: "2nd",
+        profileImageUrl: "https://example.com/profiles/kamal.jpg",
+        sharedConnections: 9,
+        isOpenToWork: false,
+        lastActive: "1 week ago"
+      },
+      {
+        userId,
+        fullName: "Niraj Kumar",
+        email: "n.kumar@finedge.com",
+        jobTitle: "Business Development Manager",
+        companyId: createdCompanies[1].id,
+        companyName: "FinEdge Financial Solutions",
+        location: "New York, NY",
+        linkedInUrl: "https://linkedin.com/in/niraj-kumar",
+        tags: ["Finance", "Business"],
+        linkedinId: "niraj-kumar-707", 
+        connectionDegree: "3rd",
+        profileImageUrl: "https://example.com/profiles/niraj.jpg",
+        sharedConnections: 3,
+        isOpenToWork: false,
+        lastActive: "3 days ago"
+      }
+    ];
+    
+    for (const contactData of contacts) {
+      // @ts-ignore - TypeScript doesn't know we'll add all required fields
+      await this.createContact(contactData);
+    }
   }
 }
 

@@ -26,12 +26,24 @@ export const contacts = pgTable("contacts", {
   phone: text("phone"),
   jobTitle: text("job_title"),
   companyId: integer("company_id"),
+  companyName: text("company_name"),
   location: text("location"),
   linkedInUrl: text("linkedin_url"),
   lastContacted: timestamp("last_contacted"),
   notes: text("notes"),
   tags: text("tags").array(),
   isEnriched: boolean("is_enriched").default(false),
+  // LinkedIn Sales Navigator fields
+  linkedinId: text("linkedin_id"),
+  connectionDegree: text("connection_degree"),
+  profileImageUrl: text("profile_image_url"),
+  sharedConnections: integer("shared_connections"),
+  isOpenToWork: boolean("is_open_to_work").default(false),
+  lastActive: text("last_active"),
+  // Enrichment status
+  emailVerified: boolean("email_verified").default(false),
+  enrichmentSource: text("enrichment_source"),
+  enrichmentDate: timestamp("enrichment_date"),
   // CRM integration fields
   salesforceId: text("salesforce_id"),
   hubspotId: text("hubspot_id"),
@@ -39,6 +51,11 @@ export const contacts = pgTable("contacts", {
   crmSource: text("crm_source"), // 'salesforce', 'hubspot', or null
   crmLastSynced: timestamp("crm_last_synced"),
   createdAt: timestamp("created_at").defaultNow(),
+  // Connection/outreach status
+  connectionSent: boolean("connection_sent").default(false),
+  connectionSentDate: timestamp("connection_sent_date"),
+  messageSent: boolean("message_sent").default(false),
+  messageSentDate: timestamp("message_sent_date"),
 });
 
 // Companies table for tracking organizations
@@ -52,6 +69,18 @@ export const companies = pgTable("companies", {
   location: text("location"),
   description: text("description"),
   phone: text("phone"),
+  // LinkedIn Sales Navigator fields
+  linkedinId: text("linkedin_id"),
+  linkedinUrl: text("linkedin_url"),
+  employeeCount: integer("employee_count"),
+  foundedYear: integer("founded_year"),
+  specialties: text("specialties").array(),
+  logoUrl: text("logo_url"),
+  followers: integer("followers"),
+  // Enrichment status
+  isEnriched: boolean("is_enriched").default(false),
+  enrichmentSource: text("enrichment_source"),
+  enrichmentDate: timestamp("enrichment_date"),
   // CRM integration fields
   salesforceId: text("salesforce_id"),
   hubspotId: text("hubspot_id"),
@@ -86,7 +115,10 @@ export const insertContactSchema = createInsertSchema(contacts)
   });
 
 export const insertCompanySchema = createInsertSchema(companies)
-  .omit({ id: true, createdAt: true });
+  .omit({ id: true, createdAt: true, specialties: true })
+  .extend({
+    specialties: z.array(z.string()).optional(),
+  });
 
 export const insertCreditTransactionSchema = createInsertSchema(creditTransactions)
   .omit({ id: true, createdAt: true });

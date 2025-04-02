@@ -1,7 +1,9 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // Configure the generative AI
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
+const apiKey = process.env.GEMINI_API_KEY as string;
+console.log("Gemini API key available:", !!apiKey);
+const genAI = new GoogleGenerativeAI(apiKey);
 
 export enum MessagePurpose {
   Introduction = 'introduction',
@@ -35,8 +37,8 @@ export interface GenerateMessageParams {
  * Generates a message for a contact using Gemini AI
  */
 export async function generateMessage(params: GenerateMessageParams): Promise<string> {
-  // Access the generative model
-  const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+  // Access the generative model - use gemini-1.5-pro for latest version
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
   
   // Craft the prompt based on purpose and tone
   let prompt = '';

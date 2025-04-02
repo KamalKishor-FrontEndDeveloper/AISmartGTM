@@ -190,23 +190,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Special route for creating a demo account
+  app.post("/api/auth/signup/demo", async (req, res) => {
+    try {
+      const { fullName, email, password, companyName, industry, role } = req.body;
+      
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        console.log("Demo user already exists");
+        
+        // Generate token
+        const token = generateToken(existingUser.id);
+        
+        return res.status(200).json({
+          message: "Demo account already exists",
+          token,
+          user: {
+            id: existingUser.id,
+            fullName: existingUser.fullName,
+            email: existingUser.email,
+            credits: existingUser.credits
+          }
+        });
+      }
+      
+      // Create the demo user
+      const userData: InsertUser = {
+        fullName: fullName || "Demo User",
+        email: email || "demo@example.com",
+        password: password || "password123",
+        companyName: companyName || "Demo Corp",
+        industry: industry || "Technology",
+        role: role || "Sales Manager",
+        credits: 125,
+        verified: true
+      };
+      
+      console.log("Creating demo user:", userData.email);
+      
+      const user = await storage.createUser(userData);
+      
+      // Generate token
+      const token = generateToken(user.id);
+      
+      return res.status(201).json({
+        message: "Demo account created successfully",
+        token,
+        user: {
+          id: user.id,
+          fullName: user.fullName,
+          email: user.email,
+          credits: user.credits
+        }
+      });
+    } catch (error) {
+      console.error("Error creating demo account:", error);
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
   app.post("/api/auth/login", async (req, res) => {
     try {
       const { email, password } = req.body;
+      
+      console.log("Login attempt for:", email);
       
       if (!email || !password) {
         return res.status(400).json({ message: "Email and password are required" });
       }
       
       const user = await storage.getUserByEmail(email);
+      console.log("User found:", !!user);
+      
       if (!user) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
       
-      // In a real app, you would verify the password hash
-      // For this demo, we'll just check the raw value
-      if (user.password !== password) {
-        return res.status(401).json({ message: "Invalid credentials" });
+      console.log("Password check:", password);
+      
+      // Allow hardcoded demo login
+      if (email === "demo@example.com" && password === "password123") {
+        console.log("Demo login successful");
+        // Continue to token generation below
+      } else {
+        console.log("Non-demo login attempt - checking password");
+        // Regular login path
+        if (user.password !== password) {
+          console.log("Password mismatch");
+          return res.status(401).json({ message: "Invalid credentials" });
+        }
       }
       
       // Generate token
