@@ -115,18 +115,29 @@ export class MemStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.currentUserId++;
     const now = new Date();
+    
+    // Ensure user properties are properly set with explicit null values when needed
     const user: User = { 
-      ...insertUser, 
       id, 
-      createdAt: now,
+      fullName: insertUser.fullName,
+      email: insertUser.email,
+      password: insertUser.password,
+      companyName: insertUser.companyName ?? null,
+      industry: insertUser.industry ?? null,
+      role: insertUser.role ?? null,
       credits: insertUser.credits ?? 100,
+      accountStatus: insertUser.accountStatus ?? "active",
       verified: insertUser.verified ?? false,
-      accountStatus: insertUser.accountStatus ?? "active" 
+      createdAt: now
     };
+    
     this.users.set(id, user);
     
     // Add initial credits transaction
-    this.addCredits(id, user.credits, "Initial account credits");
+    const initialCredits = user.credits ?? 0;
+    if (initialCredits > 0) {
+      this.addCredits(id, initialCredits, "Initial account credits");
+    }
     
     return user;
   }
@@ -163,13 +174,25 @@ export class MemStorage implements IStorage {
   async createContact(insertContact: InsertContact): Promise<Contact> {
     const id = this.currentContactId++;
     const now = new Date();
-    const contact: Contact = { 
-      ...insertContact, 
-      id, 
-      createdAt: now,
+    
+    // Explicitly set all fields with proper null handling
+    const contact: Contact = {
+      id,
+      userId: insertContact.userId,
+      fullName: insertContact.fullName,
+      email: insertContact.email ?? null,
+      phone: insertContact.phone ?? null,
+      jobTitle: insertContact.jobTitle ?? null,
+      companyId: insertContact.companyId ?? null,
+      location: insertContact.location ?? null,
+      linkedInUrl: insertContact.linkedInUrl ?? null,
+      lastContacted: insertContact.lastContacted ?? null,
+      notes: insertContact.notes ?? null,
       tags: insertContact.tags ?? [],
-      isEnriched: insertContact.isEnriched ?? false 
+      isEnriched: insertContact.isEnriched ?? false,
+      createdAt: now
     };
+    
     this.contacts.set(id, contact);
     return contact;
   }
@@ -201,7 +224,20 @@ export class MemStorage implements IStorage {
   async createCompany(insertCompany: InsertCompany): Promise<Company> {
     const id = this.currentCompanyId++;
     const now = new Date();
-    const company: Company = { ...insertCompany, id, createdAt: now };
+    
+    // Explicitly set all fields with proper null handling
+    const company: Company = {
+      id,
+      userId: insertCompany.userId,
+      name: insertCompany.name,
+      industry: insertCompany.industry ?? null,
+      website: insertCompany.website ?? null,
+      size: insertCompany.size ?? null,
+      location: insertCompany.location ?? null,
+      description: insertCompany.description ?? null,
+      createdAt: now
+    };
+    
     this.companies.set(id, company);
     return company;
   }
@@ -243,7 +279,8 @@ export class MemStorage implements IStorage {
     this.creditTransactions.set(id, creditTx);
     
     // Update user's credit balance
-    user.credits = (user.credits || 0) + amount;
+    const currentCredits = user.credits ?? 0;
+    user.credits = currentCredits + amount;
     this.users.set(userId, user);
     
     return user.credits;
@@ -280,7 +317,12 @@ export class MemStorage implements IStorage {
   async getCreditTransactions(userId: number): Promise<CreditTransaction[]> {
     return Array.from(this.creditTransactions.values())
       .filter(tx => tx.userId === userId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      .sort((a, b) => {
+        // Handle potential null values for createdAt
+        const timeA = a.createdAt?.getTime() ?? 0;
+        const timeB = b.createdAt?.getTime() ?? 0;
+        return timeB - timeA; // Most recent first
+      });
   }
 
   // Search/Enrichment operations
