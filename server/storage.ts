@@ -13,27 +13,27 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, user: Partial<InsertUser>): Promise<User | undefined>;
   verifyUser(id: number): Promise<User | undefined>;
-  
+
   // Contact operations
   getContact(id: number): Promise<Contact | undefined>;
   getContactsByUser(userId: number): Promise<Contact[]>;
   createContact(contact: InsertContact): Promise<Contact>;
   updateContact(id: number, contact: Partial<InsertContact>): Promise<Contact | undefined>;
   deleteContact(id: number): Promise<boolean>;
-  
+
   // Company operations
   getCompany(id: number): Promise<Company | undefined>;
   getCompaniesByUser(userId: number): Promise<Company[]>;
   createCompany(company: InsertCompany): Promise<Company>;
   updateCompany(id: number, company: Partial<InsertCompany>): Promise<Company | undefined>;
   deleteCompany(id: number): Promise<boolean>;
-  
+
   // Credit operations
   getCreditBalance(userId: number): Promise<number>;
   addCredits(userId: number, amount: number, description: string): Promise<number>;
   useCredits(userId: number, amount: number, description: string): Promise<number | null>;
   getCreditTransactions(userId: number): Promise<CreditTransaction[]>;
-  
+
   // Search/Enrichment operations
   searchContacts(
     userId: number, 
@@ -44,6 +44,7 @@ export interface IStorage {
       location?: string 
     }
   ): Promise<Contact[]>;
+  enrichContact(contactId: number): Promise<Contact | null>;
 }
 
 export class MemStorage implements IStorage {
@@ -65,7 +66,7 @@ export class MemStorage implements IStorage {
     this.currentContactId = 1;
     this.currentCompanyId = 1;
     this.currentTransactionId = 1;
-    
+
     // Add some default data for development purposes
     this.initializeSampleData();
   }
@@ -83,11 +84,11 @@ export class MemStorage implements IStorage {
       industry: "Technology",
       role: "Sales Manager"
     };
-    
+
     this.createUser(demoUser).then(user => {
       // Add LinkedIn Sales Navigator sample data
       this.addSampleLinkedInData(user.id);
-      
+
       // Add some companies
       const companies = [
         { 
@@ -128,14 +129,14 @@ export class MemStorage implements IStorage {
           crmLastSynced: new Date()
         }
       ];
-      
+
       companies.forEach(company => {
         this.createCompany({
           userId: user.id,
           ...company
         });
       });
-      
+
       // Add some contacts with CRM integration data
       const contacts = [
         {
@@ -161,7 +162,7 @@ export class MemStorage implements IStorage {
           crmSource: "hubspot"
         }
       ];
-      
+
       contacts.forEach(contact => {
         this.createContact({
           userId: user.id,
@@ -185,7 +186,7 @@ export class MemStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.currentUserId++;
     const now = new Date();
-    
+
     // Ensure user properties are properly set with explicit null values when needed
     const user: User = { 
       id, 
@@ -200,22 +201,22 @@ export class MemStorage implements IStorage {
       verified: insertUser.verified ?? false,
       createdAt: now
     };
-    
+
     this.users.set(id, user);
-    
+
     // Add initial credits transaction
     const initialCredits = user.credits ?? 0;
     if (initialCredits > 0) {
       this.addCredits(id, initialCredits, "Initial account credits");
     }
-    
+
     return user;
   }
 
   async updateUser(id: number, userData: Partial<InsertUser>): Promise<User | undefined> {
     const user = await this.getUser(id);
     if (!user) return undefined;
-    
+
     const updatedUser: User = { ...user, ...userData };
     this.users.set(id, updatedUser);
     return updatedUser;
@@ -224,7 +225,7 @@ export class MemStorage implements IStorage {
   async verifyUser(id: number): Promise<User | undefined> {
     const user = await this.getUser(id);
     if (!user) return undefined;
-    
+
     user.verified = true;
     this.users.set(id, user);
     return user;
@@ -244,7 +245,7 @@ export class MemStorage implements IStorage {
   async createContact(insertContact: InsertContact): Promise<Contact> {
     const id = this.currentContactId++;
     const now = new Date();
-    
+
     // Explicitly set all fields with proper null handling
     const contact: Contact = {
       id,
@@ -261,7 +262,7 @@ export class MemStorage implements IStorage {
       notes: insertContact.notes ?? null,
       tags: insertContact.tags ?? [],
       isEnriched: insertContact.isEnriched ?? false,
-      
+
       // LinkedIn Sales Navigator fields
       linkedinId: insertContact.linkedinId ?? null,
       connectionDegree: insertContact.connectionDegree ?? null,
@@ -269,19 +270,19 @@ export class MemStorage implements IStorage {
       sharedConnections: insertContact.sharedConnections ?? null,
       isOpenToWork: insertContact.isOpenToWork ?? false,
       lastActive: insertContact.lastActive ?? null,
-      
+
       // Enrichment status
       emailVerified: insertContact.emailVerified ?? false,
       enrichmentSource: insertContact.enrichmentSource ?? null,
       enrichmentDate: insertContact.enrichmentDate ?? null,
-      
+
       // CRM integration fields
       salesforceId: insertContact.salesforceId ?? null,
       hubspotId: insertContact.hubspotId ?? null,
       isImported: insertContact.isImported ?? false,
       crmSource: insertContact.crmSource ?? null,
       crmLastSynced: insertContact.crmLastSynced ?? null,
-      
+
       // Connection/outreach status
       connectionSent: insertContact.connectionSent ?? false,
       connectionSentDate: insertContact.connectionSentDate ?? null,
@@ -290,10 +291,10 @@ export class MemStorage implements IStorage {
       emailSent: insertContact.emailSent ?? false,
       emailSentDate: insertContact.emailSentDate ?? null,
       lastContactedDate: insertContact.lastContactedDate ?? null,
-      
+
       createdAt: now
     };
-    
+
     this.contacts.set(id, contact);
     return contact;
   }
@@ -301,7 +302,7 @@ export class MemStorage implements IStorage {
   async updateContact(id: number, contactData: Partial<InsertContact>): Promise<Contact | undefined> {
     const contact = await this.getContact(id);
     if (!contact) return undefined;
-    
+
     const updatedContact: Contact = { ...contact, ...contactData };
     this.contacts.set(id, updatedContact);
     return updatedContact;
@@ -325,7 +326,7 @@ export class MemStorage implements IStorage {
   async createCompany(insertCompany: InsertCompany): Promise<Company> {
     const id = this.currentCompanyId++;
     const now = new Date();
-    
+
     // Explicitly set all fields with proper null handling
     const company: Company = {
       id,
@@ -337,7 +338,7 @@ export class MemStorage implements IStorage {
       location: insertCompany.location ?? null,
       description: insertCompany.description ?? null,
       phone: insertCompany.phone ?? null,
-      
+
       // LinkedIn Sales Navigator fields
       linkedinId: insertCompany.linkedinId ?? null,
       linkedinUrl: insertCompany.linkedinUrl ?? null,
@@ -346,22 +347,22 @@ export class MemStorage implements IStorage {
       specialties: insertCompany.specialties ?? [],
       logoUrl: insertCompany.logoUrl ?? null,
       followers: insertCompany.followers ?? null,
-      
+
       // Enrichment status
       isEnriched: insertCompany.isEnriched ?? false,
       enrichmentSource: insertCompany.enrichmentSource ?? null,
       enrichmentDate: insertCompany.enrichmentDate ?? null,
-      
+
       // CRM integration fields
       salesforceId: insertCompany.salesforceId ?? null,
       hubspotId: insertCompany.hubspotId ?? null,
       isImported: insertCompany.isImported ?? false,
       crmSource: insertCompany.crmSource ?? null,
       crmLastSynced: insertCompany.crmLastSynced ?? null,
-      
+
       createdAt: now
     };
-    
+
     this.companies.set(id, company);
     return company;
   }
@@ -369,7 +370,7 @@ export class MemStorage implements IStorage {
   async updateCompany(id: number, companyData: Partial<InsertCompany>): Promise<Company | undefined> {
     const company = await this.getCompany(id);
     if (!company) return undefined;
-    
+
     const updatedCompany: Company = { ...company, ...companyData };
     this.companies.set(id, updatedCompany);
     return updatedCompany;
@@ -388,7 +389,7 @@ export class MemStorage implements IStorage {
   async addCredits(userId: number, amount: number, description: string): Promise<number> {
     const user = await this.getUser(userId);
     if (!user) throw new Error("User not found");
-    
+
     // Create transaction record
     const transaction: InsertCreditTransaction = {
       userId,
@@ -396,28 +397,28 @@ export class MemStorage implements IStorage {
       description,
       type: "credit"
     };
-    
+
     const id = this.currentTransactionId++;
     const now = new Date();
     const creditTx: CreditTransaction = { ...transaction, id, createdAt: now };
     this.creditTransactions.set(id, creditTx);
-    
+
     // Update user's credit balance
     const currentCredits = user.credits ?? 0;
     user.credits = currentCredits + amount;
     this.users.set(userId, user);
-    
+
     return user.credits;
   }
 
   async useCredits(userId: number, amount: number, description: string): Promise<number | null> {
     const user = await this.getUser(userId);
     if (!user) throw new Error("User not found");
-    
+
     if ((user.credits || 0) < amount) {
       return null; // Not enough credits
     }
-    
+
     // Create transaction record
     const transaction: InsertCreditTransaction = {
       userId,
@@ -425,16 +426,16 @@ export class MemStorage implements IStorage {
       description,
       type: "debit"
     };
-    
+
     const id = this.currentTransactionId++;
     const now = new Date();
     const creditTx: CreditTransaction = { ...transaction, id, createdAt: now };
     this.creditTransactions.set(id, creditTx);
-    
+
     // Update user's credit balance
     user.credits = (user.credits || 0) - amount;
     this.users.set(userId, user);
-    
+
     return user.credits;
   }
 
@@ -485,19 +486,19 @@ export class MemStorage implements IStorage {
         isEnriched: true
       }
     ];
-    
+
     // For demo purposes, create real Contact objects from the sample data
     let results: Contact[] = [];
-    
+
     for (const sample of sampleContacts) {
       if (!this.isContactMatchingFilters(sample, filters)) continue;
-      
+
       // Find the associated company
       let company: Company | undefined;
       if (sample.companyId) {
         company = await this.getCompany(sample.companyId);
       }
-      
+
       const contact: InsertContact = {
         userId,
         fullName: sample.fullName || "Unknown",
@@ -514,14 +515,14 @@ export class MemStorage implements IStorage {
         isImported: false,
         crmSource: null
       };
-      
+
       const savedContact = await this.createContact(contact);
       results.push(savedContact);
     }
-    
+
     return results;
   }
-  
+
   private isContactMatchingFilters(
     contact: Partial<Contact>, 
     filters: { 
@@ -535,18 +536,18 @@ export class MemStorage implements IStorage {
         !contact.jobTitle.toLowerCase().includes(filters.jobTitle.toLowerCase())) {
       return false;
     }
-    
+
     if (filters.location && contact.location && 
         !contact.location.toLowerCase().includes(filters.location.toLowerCase())) {
       return false;
     }
-    
+
     // For company and industry filters, we'd need to join with the company table
     // In a real implementation, this would be handled by the database
-    
+
     return true;
   }
-  
+
   private async addSampleLinkedInData(userId: number): Promise<void> {
     // Add sample companies first
     const companies: Partial<InsertCompany>[] = [
@@ -599,14 +600,14 @@ export class MemStorage implements IStorage {
         followers: 48900
       }
     ];
-    
+
     const createdCompanies: Company[] = [];
     for (const companyData of companies) {
       // @ts-ignore - TypeScript doesn't know we'll add all required fields
       const company = await this.createCompany(companyData);
       createdCompanies.push(company);
     }
-    
+
     // Now add contacts with references to the companies
     const contacts: Partial<InsertContact>[] = [
       {
@@ -780,11 +781,35 @@ export class MemStorage implements IStorage {
         lastActive: "3 days ago"
       }
     ];
-    
+
     for (const contactData of contacts) {
       // @ts-ignore - TypeScript doesn't know we'll add all required fields
       await this.createContact(contactData);
     }
+  }
+
+  async enrichContact(contactId: number): Promise<Contact | null> {
+    const contact = await this.getContact(contactId);
+    if (!contact) return null;
+
+    // Get domain from company if available
+    let domain = 'unknown.com';
+    if (contact.companyId) {
+      const company = await this.getCompany(contact.companyId);
+      if (company?.website) {
+        domain = company.website.replace(/^https?:\/\//, '');
+      }
+    }
+
+    // Use enrichment service
+    const { enrichContactData } = await import('./services/enrichment');
+    const enrichedData = await enrichContactData(contact.fullName, domain);
+
+    return this.updateContact(contactId, {
+      ...enrichedData,
+      isEnriched: true,
+      enrichmentDate: new Date()
+    });
   }
 }
 
