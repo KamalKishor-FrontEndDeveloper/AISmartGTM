@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Contact } from "@shared/schema";
 import { User } from "@/lib/auth";
 import { apiRequest } from "@/lib/queryClient";
