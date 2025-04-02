@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { useAuth } from "@/lib/auth";
 import StepOne from "./StepOne";
 import StepTwo from "./StepTwo";
@@ -170,9 +170,9 @@ export default function MultiStepSignup() {
     <div className="mb-8 w-full">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-neutral-800">Create Account</h2>
-        <a href="/login" className="text-primary-500 text-sm hover:text-primary-600">
+        <Link href="/login" className="text-primary-500 text-sm hover:text-primary-600">
           Already have an account?
-        </a>
+        </Link>
       </div>
       
       {/* Progress Indicator */}

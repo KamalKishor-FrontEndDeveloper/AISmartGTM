@@ -87,10 +87,8 @@ export default function Login() {
           <div className="mb-8">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-neutral-800">Login to Your Account</h2>
-              <Link href="/signup">
-                <a className="text-primary-500 text-sm hover:text-primary-600">
-                  Create account
-                </a>
+              <Link href="/signup" className="text-primary-500 text-sm hover:text-primary-600">
+                Create account
               </Link>
             </div>
             
@@ -117,10 +115,8 @@ export default function Login() {
                     <FormItem>
                       <div className="flex items-center justify-between">
                         <FormLabel>Password</FormLabel>
-                        <Link href="/forgot-password">
-                          <a className="text-xs text-primary-500 hover:text-primary-600">
-                            Forgot password?
-                          </a>
+                        <Link href="/forgot-password" className="text-xs text-primary-500 hover:text-primary-600">
+                          Forgot password?
                         </Link>
                       </div>
                       <FormControl>
@@ -147,10 +143,8 @@ export default function Login() {
                 <div className="text-center mt-6">
                   <p className="text-sm text-neutral-600">
                     Don't have an account?{" "}
-                    <Link href="/signup">
-                      <a className="text-primary-500 hover:text-primary-600 font-medium">
-                        Sign up
-                      </a>
+                    <Link href="/signup" className="text-primary-500 hover:text-primary-600 font-medium">
+                      Sign up
                     </Link>
                   </p>
                 </div>
