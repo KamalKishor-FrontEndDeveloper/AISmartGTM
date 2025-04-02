@@ -285,13 +285,24 @@ export default function ContactsNewPage() {
         .filter(option => option.checked)
         .map(option => option.id);
       
-      return apiRequest("/api/enrich/contact", {
+      const response = await fetch("/api/enrich/contact", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("authToken")}`
+        },
         body: JSON.stringify({ 
           contactId,
           options
         })
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to enrich contact");
+      }
+      
+      return response.json();
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/contacts"] });
@@ -310,6 +321,48 @@ export default function ContactsNewPage() {
       });
     }
   });
+  
+  // Generate LinkedIn message
+  const [isGeneratingMessage, setIsGeneratingMessage] = useState(false);
+  const [generatedMessage, setGeneratedMessage] = useState("");
+  
+  const generateLinkedInMessage = async (contact: Contact) => {
+    setIsGeneratingMessage(true);
+    try {
+      const response = await fetch("/api/message/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("authToken")}`
+        },
+        body: JSON.stringify({
+          contactFullName: contact.fullName,
+          contactJobTitle: contact.jobTitle,
+          contactCompanyName: companiesData?.companies.find((c: any) => c.id === contact.companyId)?.name || "",
+          userFullName: user?.fullName,
+          userJobTitle: "CRM Specialist",
+          userCompanyName: "AI-CRM",
+          purpose: "introduction",
+          tone: "professional"
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to generate message");
+      }
+      
+      const data = await response.json();
+      setGeneratedMessage(data.message);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to generate LinkedIn message",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGeneratingMessage(false);
+    }
+  };
   
   // Handle LinkedIn connection request
   const sendLinkedInRequestMutation = useMutation({
@@ -655,11 +708,33 @@ export default function ContactsNewPage() {
                 <textarea 
                   className="w-full p-2 border border-gray-200 rounded-md min-h-[120px]"
                   placeholder={`Hi ${selectedContact.fullName},\n\nI'd like to connect with you on LinkedIn.\n\nBest regards,\n${user?.fullName}`}
+                  value={generatedMessage}
+                  onChange={(e) => setGeneratedMessage(e.target.value)}
                   id="linkedin-message"
                 />
-                <p className="text-xs text-gray-500">
-                  This will cost 2 credits to send a connection request
-                </p>
+                <div className="flex justify-between items-center mt-2">
+                  <p className="text-xs text-gray-500">
+                    This will cost 2 credits to send a connection request
+                  </p>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => generateLinkedInMessage(selectedContact)}
+                    disabled={isGeneratingMessage}
+                  >
+                    {isGeneratingMessage ? (
+                      <>
+                        <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="mr-2 h-3 w-3 text-amber-500" />
+                        Generate AI Message
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
             </div>
             
