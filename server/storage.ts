@@ -287,6 +287,9 @@ export class MemStorage implements IStorage {
       connectionSentDate: insertContact.connectionSentDate ?? null,
       messageSent: insertContact.messageSent ?? false,
       messageSentDate: insertContact.messageSentDate ?? null,
+      emailSent: insertContact.emailSent ?? false,
+      emailSentDate: insertContact.emailSentDate ?? null,
+      lastContactedDate: insertContact.lastContactedDate ?? null,
       
       createdAt: now
     };

@@ -24,7 +24,8 @@ import {
   Pencil, 
   Sparkles, 
   Linkedin,
-  MessageSquare
+  MessageSquare,
+  Send
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
@@ -38,6 +39,7 @@ interface ContactsTableProps {
   onViewDetails: (contact: Contact) => void;
   onEnrichContact?: (contact: Contact) => void;
   onSendLinkedInRequest?: (contact: Contact) => void;
+  onSendEmail?: (contact: Contact) => void;
   onWriteMessage?: (contact: Contact) => void;
   isRevealingEmail: boolean;
 }
@@ -51,6 +53,7 @@ export default function ContactsTable({
   onViewDetails,
   onEnrichContact,
   onSendLinkedInRequest,
+  onSendEmail,
   onWriteMessage,
   isRevealingEmail
 }: ContactsTableProps) {
@@ -184,6 +187,13 @@ export default function ContactsTable({
                           <DropdownMenuItem onClick={() => onSendLinkedInRequest(contact)}>
                             <Linkedin className="mr-2 h-4 w-4 text-blue-600" />
                             <span>Connect on LinkedIn</span>
+                          </DropdownMenuItem>
+                        )}
+                        
+                        {onSendEmail && contact.email && (
+                          <DropdownMenuItem onClick={() => onSendEmail(contact)}>
+                            <Send className="mr-2 h-4 w-4 text-teal-500" />
+                            <span>Send Email</span>
                           </DropdownMenuItem>
                         )}
                         

@@ -56,6 +56,10 @@ export const contacts = pgTable("contacts", {
   connectionSentDate: timestamp("connection_sent_date"),
   messageSent: boolean("message_sent").default(false),
   messageSentDate: timestamp("message_sent_date"),
+  emailSent: boolean("email_sent").default(false),
+  emailSentDate: timestamp("email_sent_date"),
+  lastContactedDate: timestamp("last_contacted_date"),
+  lastInteractionDate: timestamp("last_interaction_date"),
 });
 
 // Companies table for tracking organizations

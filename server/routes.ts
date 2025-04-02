@@ -701,6 +701,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Send Email
+  app.post("/api/email/send", authenticateRequest, async (req, res) => {
+    try {
+      const user = (req as any).user;
+      const { contactId, subject, message } = req.body;
+      
+      if (!contactId) {
+        return res.status(400).json({ message: "Contact ID is required" });
+      }
+      
+      if (!subject || !message) {
+        return res.status(400).json({ message: "Email subject and message are required" });
+      }
+      
+      const contact = await storage.getContact(contactId);
+      if (!contact) {
+        return res.status(404).json({ message: "Contact not found" });
+      }
+      
+      if (!contact.email) {
+        return res.status(400).json({ message: "Contact has no email address" });
+      }
+      
+      // Check if user has enough credits
+      const emailCost = 3; // Credits per email sent
+      const userCredits = await storage.getCreditBalance(user.id);
+      
+      if (userCredits < emailCost) {
+        return res.status(400).json({ 
+          message: "Insufficient credits", 
+          required: emailCost, 
+          available: userCredits 
+        });
+      }
+      
+      // Import the email service
+      const { sendContactEmail } = await import('./services/email');
+      
+      // Send the email
+      const emailResult = await sendContactEmail(user, {
+        contact,
+        subject,
+        message
+      });
+      
+      if (!emailResult) {
+        return res.status(500).json({ message: "Failed to send email. Please check SMTP settings." });
+      }
+      
+      // Use credits
+      const newBalance = await storage.useCredits(
+        user.id, 
+        emailCost, 
+        `Email sent to ${contact.fullName} (${contact.email})`
+      );
+      
+      if (newBalance === null) {
+        return res.status(400).json({ message: "Failed to process credits" });
+      }
+      
+      // Update contact with the interaction
+      await storage.updateContact(contactId, {
+        emailSent: true,
+        lastInteractionDate: new Date()
+      });
+      
+      return res.status(200).json({ 
+        success: true, 
+        message: `Email sent to ${contact.fullName} at ${contact.email}`,
+        newCreditBalance: newBalance,
+        contact: await storage.getContact(contactId)
+      });
+    } catch (error) {
+      console.error('Error sending email to contact:', error);
+      return res.status(500).json({ 
+        message: "Failed to send email", 
+        error: (error as Error).message 
+      });
+    }
+  });
+  
   // Enrich a single contact
   app.post("/api/contact/enrich", authenticateRequest, async (req, res) => {
     try {

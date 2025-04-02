@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { SendEmailDialog } from "@/components/contacts/SendEmailDialog";
 import { 
   Loader2, 
   Plus, 
@@ -39,7 +40,8 @@ import {
   Phone,
   Globe,
   Building,
-  MessageSquare
+  MessageSquare,
+  Send
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -75,6 +77,7 @@ export default function ContactsNewPage() {
   const [isRevealingEmail, setIsRevealingEmail] = useState(false);
   const [isEnrichmentDialogOpen, setIsEnrichmentDialogOpen] = useState(false);
   const [isLinkedInDialogOpen, setIsLinkedInDialogOpen] = useState(false);
+  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
   const [isWriteMessageDialogOpen, setIsWriteMessageDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   
@@ -332,6 +335,11 @@ export default function ContactsNewPage() {
   const [isGeneratingMessage, setIsGeneratingMessage] = useState(false);
   const [generatedMessage, setGeneratedMessage] = useState("");
   
+  // Generate Email message
+  const [isGeneratingEmailMessage, setIsGeneratingEmailMessage] = useState(false);
+  const [emailSubject, setEmailSubject] = useState("");
+  const [emailBody, setEmailBody] = useState("");
+  
   const generateLinkedInMessage = async (contact: Contact) => {
     setIsGeneratingMessage(true);
     try {
@@ -367,6 +375,49 @@ export default function ContactsNewPage() {
       });
     } finally {
       setIsGeneratingMessage(false);
+    }
+  };
+  
+  const generateEmailMessage = async (contact: Contact) => {
+    setIsGeneratingEmailMessage(true);
+    setEmailSubject(`Introduction from ${user?.fullName}`);
+    setEmailBody(`Dear ${contact.fullName},\n\nI hope this email finds you well.\n\nI wanted to reach out to discuss how we might be able to collaborate.\n\nBest regards,\n${user?.fullName}`);
+    
+    try {
+      const response = await fetch("/api/message/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("authToken")}`
+        },
+        body: JSON.stringify({
+          contactFullName: contact.fullName,
+          contactJobTitle: contact.jobTitle,
+          contactCompanyName: companiesData?.companies.find((c: any) => c.id === contact.companyId)?.name || "",
+          userFullName: user?.fullName,
+          userJobTitle: "CRM Specialist",
+          userCompanyName: "AI-CRM",
+          purpose: "introduction",
+          tone: "professional"
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to generate email");
+      }
+      
+      const data = await response.json();
+      // Format the email with subject line
+      setEmailSubject(`Connecting with ${contact.fullName} from ${companiesData?.companies.find((c: any) => c.id === contact.companyId)?.name || "your company"}`);
+      setEmailBody(data.message);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to generate email message",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGeneratingEmailMessage(false);
     }
   };
   
@@ -408,6 +459,32 @@ export default function ContactsNewPage() {
     }));
     window.location.href = `/dashboard/ai-writer?contact=${contactParams}`;
   };
+  
+  // Send email mutation
+  const sendEmailMutation = useMutation({
+    mutationFn: async ({ contactId, subject, body }: { contactId: number, subject: string, body: string }) => {
+      return apiRequest("/api/email/send", {
+        method: "POST",
+        body: JSON.stringify({ contactId, subject, body })
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/contacts"] });
+      toast({
+        title: "Email Sent",
+        description: "Your email has been sent successfully",
+      });
+      setIsEmailDialogOpen(false);
+      setSelectedContact(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send email",
+        variant: "destructive"
+      });
+    }
+  });
   
   // Filter contacts based on search term
   const filteredContacts = data?.contacts.filter((contact: Contact) => {
@@ -548,6 +625,12 @@ export default function ContactsNewPage() {
                   onSendLinkedInRequest={(contact) => {
                     setSelectedContact(contact);
                     setIsLinkedInDialogOpen(true);
+                  }}
+                  onSendEmail={(contact) => {
+                    setSelectedContact(contact);
+                    setIsEmailDialogOpen(true);
+                    // Pre-generate an email message when the dialog opens
+                    generateEmailMessage(contact);
                   }}
                   onWriteMessage={handleWriteMessage}
                   isRevealingEmail={isRevealingEmail}
@@ -871,6 +954,20 @@ export default function ContactsNewPage() {
           </DialogContent>
         </Dialog>
       )}
+      
+      {/* Send Email Dialog */}
+      {selectedContact && (
+        <SendEmailDialog
+          isOpen={isEmailDialogOpen}
+          onClose={() => setIsEmailDialogOpen(false)}
+          contact={selectedContact}
+          user={user}
+          onGenerateAIMessage={generateEmailMessage}
+          isGeneratingMessage={isGeneratingEmailMessage}
+          generatedMessage={emailBody}
+        />
+      )}
     </div>
   );
+
 }
