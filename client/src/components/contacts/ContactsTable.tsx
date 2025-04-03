@@ -54,7 +54,7 @@ interface ContactsTableProps {
   onEnrichContact?: (contact: Contact) => void;
   onSendEmail?: (contact: Contact) => void;
   isRevealingEmail: boolean;
-  isVerifyingEmail: boolean;
+  isVerifyingEmail?: boolean;
   handleAIWriter: (contact: Contact) => void;
   onVerifyEmail?: (contact: Contact) => void;
   handleCRMExport: (contact: Contact) => void;
@@ -72,6 +72,8 @@ export default function ContactsTable({
   onEnrichContact,
   onSendEmail,
   isRevealingEmail,
+  isVerifyingEmail = false,
+  onVerifyEmail,
   handleAIWriter,
   handleCRMExport,
   pageSize = 10, // Default page size
