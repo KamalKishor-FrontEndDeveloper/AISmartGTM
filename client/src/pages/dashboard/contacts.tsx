@@ -104,8 +104,11 @@ export default function ContactsNewPage() {
         })
       });
       
-      if (!response.ok) throw new Error('Failed to find email');
-      return response.json();
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to find email');
+      }
+      return data;
     },
     onSuccess: (data, contact) => {
       queryClient.invalidateQueries({ queryKey: ['/api/contacts'] });
