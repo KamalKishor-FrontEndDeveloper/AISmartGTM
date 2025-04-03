@@ -192,21 +192,20 @@ export default function ContactsNewPage() {
   // Update contact mutation
   const updateContactMutation = useMutation({
     mutationFn: async ({ id, contact }: { id: number, contact: ContactFormValues }) => {
-      const response = await fetch(`/api/contacts/${id}`, {
+      const response = await apiRequest(`/api/contacts/${id}`, {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("authToken")}`
-        },
         body: JSON.stringify(contact)
       });
-      if (!response.ok) {
-        throw new Error("Failed to update contact");
-      }
-      return response.json();
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/contacts"] });
+      toast({
+        title: "Contact updated",
+        description: "The contact has been updated successfully",
+      });
+      setIsEditDialogOpen(false);
+      setEditContact(null);
       toast({
         title: "Contact updated",
         description: "The contact has been updated successfully",
