@@ -56,6 +56,9 @@ interface ContactsTableProps {
   onSendEmail?: (contact: Contact) => void;
   isRevealingEmail: boolean;
   isVerifyingEmail?: boolean;
+  isEmailFinding?: boolean;
+  findingEmailId?: number;
+  onEmailFind?: (contact: Contact) => void;
   handleAIWriter: (contact: Contact) => void;
   onVerifyEmail?: (contact: Contact) => void;
   handleCRMExport: (contact: Contact) => void;
@@ -157,7 +160,30 @@ export default function ContactsTable({
               <TableCell>
                 <div className="flex items-center gap-2">
                   <Mail className="w-4 h-4 text-muted-foreground" />
-                  {contact.email || "N/A"}
+                  {contact.email ? contact.email : (
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => onEmailFind?.(contact)}
+                      disabled={!contact.fullName || isEmailFinding}
+                      className="text-primary-500 hover:text-primary-600 p-0 h-auto font-normal"
+                    >
+                      {isEmailFinding && findingEmailId === contact.id ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Finding...
+                        </>
+                      ) : (
+                        <>
+                          <Search className="mr-2 h-4 w-4" />
+                          Find Email
+                          <span className="ml-1 text-xs bg-primary-50 text-primary-600 px-1.5 py-0.5 rounded">
+                            1 credit
+                          </span>
+                        </>
+                      )}
+                    </Button>
+                  )}
                 </div>
               </TableCell>
               <TableCell>

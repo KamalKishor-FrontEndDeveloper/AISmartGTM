@@ -866,7 +866,59 @@ async function verifyEmail(email: string): Promise<boolean> {
   }
 }
 
-// Email verification endpoint
+// Email finder endpoint
+  app.post("/api/email/find", authenticateRequest, async (req, res) => {
+    try {
+      const user = (req as any).user;
+      const { firstName, lastName, domainOrCompany } = req.body;
+
+      // Check if user has enough credits
+      const findCost = 1;
+      const updatedCredits = await storage.useCredits(
+        user.id,
+        findCost,
+        `Email finder for ${firstName} ${lastName}`
+      );
+
+      if (updatedCredits === null) {
+        return res.status(400).json({ message: "Insufficient credits" });
+      }
+
+      const response = await fetch('https://app.icypeas.com/api/email-search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.ICYPEAS_API_KEY}`
+        },
+        body: JSON.stringify({
+          firstname: firstName,
+          lastname: lastName,
+          domainOrCompany
+        })
+      });
+
+      const data = await response.json();
+      
+      if (data.email) {
+        return res.status(200).json({
+          email: data.email,
+          creditsUsed: findCost,
+          creditsRemaining: updatedCredits
+        });
+      }
+
+      return res.status(404).json({ 
+        message: "Email not found",
+        creditsUsed: findCost,
+        creditsRemaining: updatedCredits
+      });
+    } catch (error) {
+      console.error("Error finding email:", error);
+      return res.status(500).json({ message: "Failed to find email" });
+    }
+  });
+
+  // Email verification endpoint
   app.post("/api/verify-email", authenticateRequest, async (req, res) => {
     try {
       const user = (req as any).user;

@@ -82,6 +82,56 @@ export default function ContactsNewPage() {
   const [isWriteMessageDialogOpen, setIsWriteMessageDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isVerifyingEmail, setIsVerifyingEmail] = useState(false);
+  const [isEmailFinding, setIsEmailFinding] = useState(false);
+  const [findingEmailId, setFindingEmailId] = useState<number | null>(null);
+
+  // Email finder mutation
+  const findEmailMutation = useMutation({
+    mutationFn: async (contact: Contact) => {
+      const [firstName, ...lastNameParts] = contact.fullName.split(' ');
+      const lastName = lastNameParts.join(' ');
+      
+      const response = await fetch('/api/email/find', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        },
+        body: JSON.stringify({
+          firstName,
+          lastName,
+          domainOrCompany: contact.companyName
+        })
+      });
+      
+      if (!response.ok) throw new Error('Failed to find email');
+      return response.json();
+    },
+    onSuccess: (data, contact) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/contacts'] });
+      toast({
+        title: 'Email Found',
+        description: `Email address found for ${contact.fullName}`,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: 'Failed to find email address',
+        variant: 'destructive',
+      });
+    },
+    onSettled: () => {
+      setIsEmailFinding(false);
+      setFindingEmailId(null);
+    }
+  });
+
+  const handleEmailFind = async (contact: Contact) => {
+    setIsEmailFinding(true);
+    setFindingEmailId(contact.id);
+    await findEmailMutation.mutateAsync(contact);
+  };
 
   // Get user's contacts
   const { data, isLoading } = useQuery({
@@ -693,6 +743,9 @@ export default function ContactsNewPage() {
                   onVerifyEmail={handleVerifyEmail}
                   isRevealingEmail={isRevealingEmail}
                   isVerifyingEmail={verifyEmailMutation.isPending}
+                  isEmailFinding={isEmailFinding}
+                  findingEmailId={findingEmailId}
+                  onEmailFind={handleEmailFind}
                   handleAIWriter={handleWriteMessage}
                   handleCRMExport={(contact) => {
                     // Handle CRM export logic
