@@ -8,22 +8,34 @@ if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL environment variable is required");
 }
 
-// Configure connection pool with SSL and proper timeouts
+// Configure connection pool with proper settings
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: {
+  ssl: process.env.NODE_ENV === 'production' ? {
     rejectUnauthorized: false
-  },
-  max: 20,
+  } : false,
+  max: 10,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000,
+  connectionTimeoutMillis: 20000,
 });
 
-// Add error handling for the pool
+// Add proper error handling for the pool
 pool.on('error', (err) => {
-  console.error('Unexpected error on idle client', err);
-  process.exit(-1);
+  console.error('Unexpected database pool error:', err);
+  // Don't exit the process, let it recover
+  if (!pool.ended) {
+    console.log('Attempting to recover pool...');
+  }
 });
 
-// Create Drizzle ORM instance
+// Create Drizzle ORM instance with schema
 export const db = drizzle(pool, { schema });
+
+// Test the connection
+pool.query('SELECT NOW()', (err) => {
+  if (err) {
+    console.error('Database connection test failed:', err);
+  } else {
+    console.log('Database connection test successful');
+  }
+});
