@@ -55,7 +55,7 @@ interface ContactsTableProps {
   onSendEmail?: (contact: Contact) => void;
   isRevealingEmail: boolean;
   handleAIWriter: (contact: Contact) => void;
-  onVerifyEmail: (contact: Contact) => void;
+  onVerifyEmail?: (contact: Contact) => void;
   handleCRMExport: (contact: Contact) => void;
   pageSize?: number;
   onPageSizeChange?: (size: number) => void;
@@ -164,8 +164,8 @@ export default function ContactsTable({
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => onVerifyEmail(contact)}
-                      disabled={!contact.email}
+                      onClick={() => onVerifyEmail?.(contact)}
+                      disabled={!contact.email || !onVerifyEmail}
                     >
                       Verify Email
                     </Button>
