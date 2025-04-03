@@ -56,8 +56,8 @@ interface ContactsTableProps {
   onSendEmail?: (contact: Contact) => void;
   isRevealingEmail: boolean;
   isVerifyingEmail?: boolean;
-  isEmailFinding?: boolean;
-  findingEmailId?: number;
+  isEmailFinding: boolean;
+  findingEmailId: number | null;
   onEmailFind?: (contact: Contact) => void;
   handleAIWriter: (contact: Contact) => void;
   onVerifyEmail?: (contact: Contact) => void;
