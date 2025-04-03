@@ -32,7 +32,16 @@ import {
   Building,
   Calendar,
   Tag,
-  Star
+  Star,
+  Briefcase,
+  Users,
+  Linkedin,
+  Twitter,
+  Facebook,
+  MessageSquare,
+  Building2,
+  UserCircle,
+  List
 } from "lucide-react";
 
 interface ContactsTableProps {
@@ -62,28 +71,36 @@ export default function ContactsTable({
     <div className="w-full overflow-auto">
       <Table>
         <TableHeader>
-          <TableRow>
+          <TableRow className="bg-gray-50">
             <TableHead className="w-[30px]">
               <input type="checkbox" className="rounded border-gray-300" />
             </TableHead>
-            <TableHead>Name</TableHead>
+            <TableHead>Contact</TableHead>
             <TableHead>Title</TableHead>
             <TableHead>Company</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Phone</TableHead>
-            <TableHead>Location</TableHead>
+            <TableHead>Website</TableHead>
+            <TableHead>Company Emails</TableHead>
+            <TableHead>Contact Emails</TableHead>
+            <TableHead>Company Phones</TableHead>
+            <TableHead>Contact Phones</TableHead>
+            <TableHead>Contact Socials</TableHead>
             <TableHead>Industry</TableHead>
-            <TableHead>Source</TableHead>
-            <TableHead>Last Contact</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Score</TableHead>
-            <TableHead>Owner</TableHead>
-            <TableHead></TableHead>
+            <TableHead>Contact Location</TableHead>
+            <TableHead>Seniority</TableHead>
+            <TableHead>Department</TableHead>
+            <TableHead>Company Location</TableHead>
+            <TableHead>Employee Size</TableHead>
+            <TableHead>Company Socials</TableHead>
+            <TableHead>AI Writer</TableHead>
+            <TableHead>Date Researched</TableHead>
+            <TableHead>Lists</TableHead>
+            <TableHead>CRM</TableHead>
+            <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {contacts.map((contact) => (
-            <TableRow key={contact.id}>
+            <TableRow key={contact.id} className="hover:bg-gray-50">
               <TableCell>
                 <input type="checkbox" className="rounded border-gray-300" />
               </TableCell>
@@ -109,21 +126,28 @@ export default function ContactsTable({
                 </div>
               </TableCell>
               <TableCell>
-                {contact.email ? (
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-4 h-4" />
-                    {contact.email}
-                  </div>
-                ) : (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onEmailReveal(contact.id)}
-                    disabled={isRevealingEmail}
-                  >
-                    Reveal Email
-                  </Button>
-                )}
+                <div className="flex items-center gap-2">
+                  <Globe className="w-4 h-4 text-muted-foreground" />
+                  {contact.website || "N/A"}
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-muted-foreground" />
+                  {contact.companyEmail || "N/A"}
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-muted-foreground" />
+                  {contact.email || "N/A"}
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  <Phone className="w-4 h-4 text-muted-foreground" />
+                  {contact.companyPhone || "N/A"}
+                </div>
               </TableCell>
               <TableCell>
                 <div className="flex items-center gap-2">
@@ -133,49 +157,73 @@ export default function ContactsTable({
               </TableCell>
               <TableCell>
                 <div className="flex items-center gap-2">
+                  {contact.linkedInUrl && (
+                    <Linkedin className="w-4 h-4 text-blue-600" />
+                  )}
+                  {contact.twitterUrl && (
+                    <Twitter className="w-4 h-4 text-blue-400" />
+                  )}
+                </div>
+              </TableCell>
+              <TableCell>{contact.industry || "N/A"}</TableCell>
+              <TableCell>
+                <div className="flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-muted-foreground" />
                   {contact.location || "N/A"}
                 </div>
               </TableCell>
+              <TableCell>{contact.seniority || "N/A"}</TableCell>
+              <TableCell>{contact.department || "N/A"}</TableCell>
               <TableCell>
                 <div className="flex items-center gap-2">
-                  <Globe className="w-4 h-4 text-muted-foreground" />
-                  {contact.industry || "N/A"}
+                  <Building2 className="w-4 h-4 text-muted-foreground" />
+                  {contact.companyLocation || "N/A"}
                 </div>
               </TableCell>
               <TableCell>
-                <Badge variant="secondary">
-                  <Tag className="w-3 h-3 mr-1" />
-                  {contact.source || "Manual"}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-muted-foreground" />
+                  {contact.employeeSize || "N/A"}
+                </div>
               </TableCell>
               <TableCell>
-                {contact.lastContactedDate ? (
+                <div className="flex items-center gap-2">
+                  {contact.companySocials?.linkedin && (
+                    <Linkedin className="w-4 h-4 text-blue-600" />
+                  )}
+                  {contact.companySocials?.twitter && (
+                    <Twitter className="w-4 h-4 text-blue-400" />
+                  )}
+                  {contact.companySocials?.facebook && (
+                    <Facebook className="w-4 h-4 text-blue-600" />
+                  )}
+                </div>
+              </TableCell>
+              <TableCell>
+                <Button variant="ghost" size="sm">
+                  <MessageSquare className="w-4 h-4" />
+                </Button>
+              </TableCell>
+              <TableCell>
+                {contact.dateResearched ? (
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-muted-foreground" />
-                    {new Date(contact.lastContactedDate).toLocaleDateString()}
+                    {new Date(contact.dateResearched).toLocaleDateString()}
                   </div>
                 ) : (
-                  <span className="text-muted-foreground">Never</span>
+                  "N/A"
                 )}
               </TableCell>
               <TableCell>
-                <Badge variant={contact.status === "Active" ? "success" : "default"}>
-                  {contact.status || "New"}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-1">
-                  <Star className="w-4 h-4 text-amber-400 fill-current" />
-                  {contact.score || "0"}
+                <div className="flex items-center gap-2">
+                  <List className="w-4 h-4 text-muted-foreground" />
+                  {contact.lists?.join(", ") || "N/A"}
                 </div>
               </TableCell>
               <TableCell>
-                <Avatar className="w-6 h-6">
-                  <div className="bg-blue-100 text-blue-700 w-full h-full flex items-center justify-center text-xs font-medium">
-                    ME
-                  </div>
-                </Avatar>
+                <Badge variant="outline">
+                  {contact.crmSource || "None"}
+                </Badge>
               </TableCell>
               <TableCell>
                 <DropdownMenu>
