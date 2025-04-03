@@ -54,6 +54,7 @@ interface ContactsTableProps {
   onEnrichContact?: (contact: Contact) => void;
   onSendEmail?: (contact: Contact) => void;
   isRevealingEmail: boolean;
+  isVerifyingEmail: boolean;
   handleAIWriter: (contact: Contact) => void;
   onVerifyEmail?: (contact: Contact) => void;
   handleCRMExport: (contact: Contact) => void;
