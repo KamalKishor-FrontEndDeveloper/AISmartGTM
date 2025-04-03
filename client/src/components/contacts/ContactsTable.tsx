@@ -25,14 +25,14 @@ import {
   FileText, 
   Trash2, 
   Pencil, 
-  Sparkles, 
-  Linkedin,
-  MessageSquare,
-  Send,
-  Link,
-  Globe,
+  Sparkles,
+  Phone,
   MapPin,
-  Calendar
+  Globe,
+  Building,
+  Calendar,
+  Tag,
+  Star
 } from "lucide-react";
 
 interface ContactsTableProps {
@@ -43,9 +43,7 @@ interface ContactsTableProps {
   onDeleteContact: (contact: Contact) => void;
   onViewDetails: (contact: Contact) => void;
   onEnrichContact?: (contact: Contact) => void;
-  onSendLinkedInRequest?: (contact: Contact) => void;
   onSendEmail?: (contact: Contact) => void;
-  onWriteMessage?: (contact: Contact) => void;
   isRevealingEmail: boolean;
 }
 
@@ -57,9 +55,7 @@ export default function ContactsTable({
   onDeleteContact,
   onViewDetails,
   onEnrichContact,
-  onSendLinkedInRequest,
   onSendEmail,
-  onWriteMessage,
   isRevealingEmail
 }: ContactsTableProps) {
   return (
@@ -70,14 +66,19 @@ export default function ContactsTable({
             <TableHead className="w-[30px]">
               <input type="checkbox" className="rounded border-gray-300" />
             </TableHead>
-            <TableHead className="w-[250px]">Name</TableHead>
-            <TableHead className="w-[200px]">Company</TableHead>
-            <TableHead className="w-[150px]">Contact Info</TableHead>
-            <TableHead className="w-[150px]">Location</TableHead>
-            <TableHead className="w-[150px]">LinkedIn</TableHead>
-            <TableHead className="w-[120px]">Last Contact</TableHead>
-            <TableHead className="w-[100px]">Status</TableHead>
-            <TableHead className="w-[100px]"></TableHead>
+            <TableHead>Name</TableHead>
+            <TableHead>Title</TableHead>
+            <TableHead>Company</TableHead>
+            <TableHead>Email</TableHead>
+            <TableHead>Phone</TableHead>
+            <TableHead>Location</TableHead>
+            <TableHead>Industry</TableHead>
+            <TableHead>Source</TableHead>
+            <TableHead>Last Contact</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Score</TableHead>
+            <TableHead>Owner</TableHead>
+            <TableHead></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -97,57 +98,56 @@ export default function ContactsTable({
                       </div>
                     )}
                   </Avatar>
-                  <div>
-                    <div className="font-medium">{contact.fullName}</div>
-                    <div className="text-sm text-muted-foreground">{contact.jobTitle}</div>
-                  </div>
+                  <div className="font-medium">{contact.fullName}</div>
                 </div>
               </TableCell>
+              <TableCell>{contact.jobTitle}</TableCell>
               <TableCell>
                 <div className="flex items-center gap-2">
-                  <Globe className="w-4 h-4 text-muted-foreground" />
+                  <Building className="w-4 h-4 text-muted-foreground" />
                   {contact.companyName}
                 </div>
               </TableCell>
               <TableCell>
-                <div className="space-y-1">
-                  {contact.email ? (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Mail className="w-4 h-4" />
-                      {contact.email}
-                    </div>
-                  ) : (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onEmailReveal(contact.id)}
-                      disabled={isRevealingEmail}
-                    >
-                      Reveal Email
-                    </Button>
-                  )}
+                {contact.email ? (
+                  <div className="flex items-center gap-2">
+                    <Mail className="w-4 h-4" />
+                    {contact.email}
+                  </div>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onEmailReveal(contact.id)}
+                    disabled={isRevealingEmail}
+                  >
+                    Reveal Email
+                  </Button>
+                )}
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  <Phone className="w-4 h-4 text-muted-foreground" />
+                  {contact.phone || "N/A"}
                 </div>
               </TableCell>
               <TableCell>
                 <div className="flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-muted-foreground" />
-                  {contact.location}
+                  {contact.location || "N/A"}
                 </div>
               </TableCell>
               <TableCell>
-                {contact.linkedInUrl ? (
-                  <a
-                    href={contact.linkedInUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-blue-600 hover:text-blue-800"
-                  >
-                    <Linkedin className="w-4 h-4" />
-                    Profile
-                  </a>
-                ) : (
-                  <span className="text-muted-foreground">Not available</span>
-                )}
+                <div className="flex items-center gap-2">
+                  <Globe className="w-4 h-4 text-muted-foreground" />
+                  {contact.industry || "N/A"}
+                </div>
+              </TableCell>
+              <TableCell>
+                <Badge variant="secondary">
+                  <Tag className="w-3 h-3 mr-1" />
+                  {contact.source || "Manual"}
+                </Badge>
               </TableCell>
               <TableCell>
                 {contact.lastContactedDate ? (
@@ -160,9 +160,22 @@ export default function ContactsTable({
                 )}
               </TableCell>
               <TableCell>
-                <Badge variant={contact.isEnriched ? "success" : "default"}>
-                  {contact.isEnriched ? "Enriched" : "Basic"}
+                <Badge variant={contact.status === "Active" ? "success" : "default"}>
+                  {contact.status || "New"}
                 </Badge>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-1">
+                  <Star className="w-4 h-4 text-amber-400 fill-current" />
+                  {contact.score || "0"}
+                </div>
+              </TableCell>
+              <TableCell>
+                <Avatar className="w-6 h-6">
+                  <div className="bg-blue-100 text-blue-700 w-full h-full flex items-center justify-center text-xs font-medium">
+                    ME
+                  </div>
+                </Avatar>
               </TableCell>
               <TableCell>
                 <DropdownMenu>
@@ -186,23 +199,10 @@ export default function ContactsTable({
                         Enrich Data
                       </DropdownMenuItem>
                     )}
-                    <DropdownMenuSeparator />
-                    {onSendLinkedInRequest && (
-                      <DropdownMenuItem onClick={() => onSendLinkedInRequest(contact)}>
-                        <Linkedin className="w-4 h-4 mr-2" />
-                        Send Connection
-                      </DropdownMenuItem>
-                    )}
-                    {onSendEmail && (
+                    {onSendEmail && contact.email && (
                       <DropdownMenuItem onClick={() => onSendEmail(contact)}>
                         <Mail className="w-4 h-4 mr-2" />
                         Send Email
-                      </DropdownMenuItem>
-                    )}
-                    {onWriteMessage && (
-                      <DropdownMenuItem onClick={() => onWriteMessage(contact)}>
-                        <MessageSquare className="w-4 h-4 mr-2" />
-                        Write Message
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuSeparator />
