@@ -683,10 +683,6 @@ export default function ContactsNewPage() {
                     setSelectedContact(contact);
                     setIsEnrichmentDialogOpen(true);
                   }}
-                  onSendLinkedInRequest={(contact) => {
-                    setSelectedContact(contact);
-                    setIsLinkedInDialogOpen(true);
-                  }}
                   onSendEmail={(contact) => {
                     setSelectedContact(contact);
                     setIsEmailDialogOpen(true);
@@ -697,6 +693,14 @@ export default function ContactsNewPage() {
                   onVerifyEmail={handleVerifyEmail}
                   isRevealingEmail={isRevealingEmail}
                   isVerifyingEmail={verifyEmailMutation.isPending}
+                  handleAIWriter={handleWriteMessage}
+                  handleCRMExport={(contact) => {
+                    // Handle CRM export logic
+                    toast({
+                      title: "Export to CRM",
+                      description: `Exporting ${contact.fullName} to CRM`,
+                    });
+                  }}
                   pageSize={pageSize}
                   onPageSizeChange={handlePageSizeChange}
                 />
