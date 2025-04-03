@@ -908,12 +908,15 @@ async function verifyEmail(email: string): Promise<boolean> {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': icypeasKey
+          'Authorization': `Bearer ${icypeasKey}`
         },
         body: JSON.stringify({
-          firstname: firstName,
-          lastname: lastName,
-          domainOrCompany
+          firstName: firstName,
+          lastName: lastName,
+          domainOrCompany,
+          customObject: {
+            externalId: `${firstName}-${lastName}-${Date.now()}`
+          }
         })
       });
 

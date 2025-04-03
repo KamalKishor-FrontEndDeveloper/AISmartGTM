@@ -90,25 +90,19 @@ export default function ContactsNewPage() {
     mutationFn: async (contact: Contact) => {
       const [firstName, ...lastNameParts] = contact.fullName.split(' ');
       const lastName = lastNameParts.join(' ');
+      
+      if (!contact.companyName) {
+        throw new Error('Company name is required to find email');
+      }
 
-      const response = await fetch('/api/email/find', {
+      return apiRequest('/api/email/find', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-        },
         body: JSON.stringify({
           firstName,
           lastName,
-          domainOrCompany: contact.companyName
+          domainOrCompany: contact.companyName.toLowerCase().replace(/\s+/g, '')
         })
       });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to find email');
-      }
-      return data;
     },
     onSuccess: (data, contact) => {
       queryClient.invalidateQueries({ queryKey: ['/api/contacts'] });
