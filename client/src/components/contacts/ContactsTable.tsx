@@ -253,6 +253,21 @@ export default function ContactsTable({
                         Send Email
                       </DropdownMenuItem>
                     )}
+                    <DropdownMenuItem onClick={() => window.location.href = `/dashboard/ai-writer?contact=${encodeURIComponent(JSON.stringify({
+                      id: contact.id,
+                      fullName: contact.fullName,
+                      jobTitle: contact.jobTitle || "",
+                      companyName: contact.companyName || ""
+                    }))}`}>
+                      <MessageSquare className="w-4 h-4 mr-2" />
+                      AI Writer
+                    </DropdownMenuItem>
+                    {contact.linkedInUrl && (
+                      <DropdownMenuItem onClick={() => window.open(contact.linkedInUrl, '_blank')}>
+                        <Linkedin className="w-4 h-4 mr-2" />
+                        Connect on LinkedIn
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       onClick={() => onDeleteContact(contact)}
