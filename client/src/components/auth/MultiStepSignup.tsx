@@ -176,15 +176,15 @@ export default function MultiStepSignup() {
       </div>
       
       {/* Progress Indicator */}
-      <div className="flex justify-between mb-8 relative">
-        <div className="absolute top-4 h-[2px] w-full bg-neutral-200 -z-10">
+      <div className="flex justify-between mb-8 relative px-4">
+        <div className="absolute top-4 left-8 right-8 h-[2px] bg-neutral-200 -z-10">
           <div 
             className="h-full bg-primary-500 transition-all duration-300" 
             style={{ width: `${((step - 1) / 3) * 100}%` }}
           ></div>
         </div>
         {[1, 2, 3, 4].map((stepNumber) => (
-          <div key={stepNumber} className="flex flex-col items-center">
+          <div key={stepNumber} className="flex flex-col items-center relative" style={{ width: '80px' }}>
             <div 
               className={`w-8 h-8 rounded-full shadow-lg transition-all duration-300 ${
                 stepNumber === step 
@@ -192,12 +192,12 @@ export default function MultiStepSignup() {
                   : stepNumber < step 
                     ? "bg-primary-500 text-white"
                     : "bg-white text-neutral-600 border-2 border-neutral-200"
-              } flex items-center justify-center`}
+              } flex items-center justify-center absolute left-1/2 -translate-x-1/2`}
             >
               {stepNumber < step ? "✓" : stepNumber}
             </div>
             <span 
-              className={`text-xs mt-1 ${
+              className={`text-xs mt-12 text-center ${
                 stepNumber <= step ? "text-primary-500 font-medium" : "text-neutral-600"
               }`}
             >
