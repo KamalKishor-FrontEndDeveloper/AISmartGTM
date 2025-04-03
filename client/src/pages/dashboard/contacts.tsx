@@ -196,7 +196,8 @@ export default function ContactsNewPage() {
         method: "PATCH",
         body: JSON.stringify(contact)
       });
-      return response.json();
+      const data = await response.json();
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/contacts"] });
