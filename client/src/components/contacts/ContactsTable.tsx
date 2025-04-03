@@ -146,7 +146,7 @@ export default function ContactsTable({
               <TableCell>
                 <div className="flex items-center gap-2">
                   <Building className="w-4 h-4 text-muted-foreground" />
-                  {contact.companyName}
+                  {companies.find(c => c.id === contact.companyId)?.name || contact.companyName || "N/A"}
                 </div>
               </TableCell>
               <TableCell>
