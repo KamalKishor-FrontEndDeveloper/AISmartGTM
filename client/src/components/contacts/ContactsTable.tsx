@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Contact, Company } from "@shared/schema";
 import { 
@@ -16,6 +17,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { Avatar } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { 
   Mail, 
   MoreHorizontal, 
@@ -25,10 +28,12 @@ import {
   Sparkles, 
   Linkedin,
   MessageSquare,
-  Send
+  Send,
+  Link,
+  Globe,
+  MapPin,
+  Calendar
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Link } from "wouter";
 
 interface ContactsTableProps {
   contacts: Contact[];
@@ -57,159 +62,162 @@ export default function ContactsTable({
   onWriteMessage,
   isRevealingEmail
 }: ContactsTableProps) {
-  // Get company name by ID
-  const getCompanyName = (companyId?: number | null) => {
-    if (!companyId) return null;
-    const company = companies.find(c => c.id === companyId);
-    return company ? company.name : null;
-  };
-
-  // Format email display
-  const formatEmail = (contact: Contact) => {
-    if (!contact.email) {
-      return (
-        <Button 
-          size="sm" 
-          variant="outline" 
-          onClick={() => onEmailReveal(contact.id)}
-          disabled={isRevealingEmail}
-        >
-          {isRevealingEmail ? "Revealing..." : "Add Email"}
-        </Button>
-      );
-    }
-    
-    return (
-      <div className="flex items-center">
-        <Mail className="h-4 w-4 mr-2 text-blue-500" />
-        <span className="text-sm">{contact.email}</span>
-      </div>
-    );
-  };
-
   return (
-    <div className="overflow-x-auto">
+    <div className="w-full overflow-auto">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[40px]">
-              <input type="checkbox" className="rounded" />
+            <TableHead className="w-[30px]">
+              <input type="checkbox" className="rounded border-gray-300" />
             </TableHead>
-            <TableHead>Contact</TableHead>
-            <TableHead>Title</TableHead>
-            <TableHead>Company</TableHead>
-            <TableHead>Website</TableHead>
-            <TableHead>Company Emails</TableHead>
-            <TableHead>Contact Emails</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+            <TableHead className="w-[250px]">Name</TableHead>
+            <TableHead className="w-[200px]">Company</TableHead>
+            <TableHead className="w-[150px]">Contact Info</TableHead>
+            <TableHead className="w-[150px]">Location</TableHead>
+            <TableHead className="w-[150px]">LinkedIn</TableHead>
+            <TableHead className="w-[120px]">Last Contact</TableHead>
+            <TableHead className="w-[100px]">Status</TableHead>
+            <TableHead className="w-[100px]"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {contacts.map((contact) => {
-            const company = companies.find(c => c.id === contact.companyId);
-            
-            return (
-              <TableRow key={contact.id}>
-                <TableCell>
-                  <input type="checkbox" className="rounded" />
-                </TableCell>
-                <TableCell>
-                  <Link href={`/dashboard/contacts/${contact.id}`} className="text-blue-500 hover:underline">
-                    {contact.fullName}
-                  </Link>
-                </TableCell>
-                <TableCell>{contact.jobTitle || "-"}</TableCell>
-                <TableCell>
-                  {company ? (
-                    <div className="flex items-center">
-                      <span className="w-5 h-5 bg-gray-200 rounded-full flex items-center justify-center mr-2">
-                        {company.name.charAt(0)}
-                      </span>
-                      <Link href={`/dashboard/companies/${company.id}`} className="text-blue-500 hover:underline">
-                        {company.name}
-                      </Link>
-                    </div>
-                  ) : "-"}
-                </TableCell>
-                <TableCell>
-                  {company?.website ? (
-                    <a 
-                      href={company.website.startsWith('http') ? company.website : `https://${company.website}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-blue-500 hover:underline"
-                    >
-                      {company.website.replace(/^https?:\/\//, '')}
-                    </a>
-                  ) : "-"}
-                </TableCell>
-                <TableCell>
-                  {company ? (
-                    <Badge variant="outline" className="bg-gray-50">
-                      {company.name.toLowerCase()}@example.com
-                    </Badge>
-                  ) : "-"}
-                </TableCell>
-                <TableCell>
-                  {formatEmail(contact)}
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end space-x-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onViewDetails(contact)}>
-                      <FileText className="h-4 w-4" />
-                    </Button>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => onEditContact(contact)}>
-                          <Pencil className="mr-2 h-4 w-4" />
-                          <span>Edit</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onDeleteContact(contact)}>
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          <span>Delete</span>
-                        </DropdownMenuItem>
-                        
-                        <DropdownMenuSeparator />
-                        
-                        {onEnrichContact && (
-                          <DropdownMenuItem onClick={() => onEnrichContact(contact)}>
-                            <Sparkles className="mr-2 h-4 w-4 text-amber-500" />
-                            <span>Enrich Contact</span>
-                          </DropdownMenuItem>
-                        )}
-                        
-                        {onSendLinkedInRequest && (
-                          <DropdownMenuItem onClick={() => onSendLinkedInRequest(contact)}>
-                            <Linkedin className="mr-2 h-4 w-4 text-blue-600" />
-                            <span>Connect on LinkedIn</span>
-                          </DropdownMenuItem>
-                        )}
-                        
-                        {onSendEmail && contact.email && (
-                          <DropdownMenuItem onClick={() => onSendEmail(contact)}>
-                            <Send className="mr-2 h-4 w-4 text-teal-500" />
-                            <span>Send Email</span>
-                          </DropdownMenuItem>
-                        )}
-                        
-                        {onWriteMessage && (
-                          <DropdownMenuItem onClick={() => onWriteMessage(contact)}>
-                            <MessageSquare className="mr-2 h-4 w-4 text-green-500" />
-                            <span>Write AI Message</span>
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+          {contacts.map((contact) => (
+            <TableRow key={contact.id}>
+              <TableCell>
+                <input type="checkbox" className="rounded border-gray-300" />
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-3">
+                  <Avatar className="w-8 h-8">
+                    {contact.profileImageUrl ? (
+                      <img src={contact.profileImageUrl} alt={contact.fullName} />
+                    ) : (
+                      <div className="bg-primary/10 text-primary w-full h-full flex items-center justify-center text-sm font-medium">
+                        {contact.fullName.split(' ').map(n => n[0]).join('')}
+                      </div>
+                    )}
+                  </Avatar>
+                  <div>
+                    <div className="font-medium">{contact.fullName}</div>
+                    <div className="text-sm text-muted-foreground">{contact.jobTitle}</div>
                   </div>
-                </TableCell>
-              </TableRow>
-            );
-          })}
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  <Globe className="w-4 h-4 text-muted-foreground" />
+                  {contact.companyName}
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="space-y-1">
+                  {contact.email ? (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Mail className="w-4 h-4" />
+                      {contact.email}
+                    </div>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onEmailReveal(contact.id)}
+                      disabled={isRevealingEmail}
+                    >
+                      Reveal Email
+                    </Button>
+                  )}
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-muted-foreground" />
+                  {contact.location}
+                </div>
+              </TableCell>
+              <TableCell>
+                {contact.linkedInUrl ? (
+                  <a
+                    href={contact.linkedInUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-blue-600 hover:text-blue-800"
+                  >
+                    <Linkedin className="w-4 h-4" />
+                    Profile
+                  </a>
+                ) : (
+                  <span className="text-muted-foreground">Not available</span>
+                )}
+              </TableCell>
+              <TableCell>
+                {contact.lastContactedDate ? (
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-muted-foreground" />
+                    {new Date(contact.lastContactedDate).toLocaleDateString()}
+                  </div>
+                ) : (
+                  <span className="text-muted-foreground">Never</span>
+                )}
+              </TableCell>
+              <TableCell>
+                <Badge variant={contact.isEnriched ? "success" : "default"}>
+                  {contact.isEnriched ? "Enriched" : "Basic"}
+                </Badge>
+              </TableCell>
+              <TableCell>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="h-8 w-8 p-0">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => onViewDetails(contact)}>
+                      <FileText className="w-4 h-4 mr-2" />
+                      View Details
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onEditContact(contact)}>
+                      <Pencil className="w-4 h-4 mr-2" />
+                      Edit
+                    </DropdownMenuItem>
+                    {onEnrichContact && (
+                      <DropdownMenuItem onClick={() => onEnrichContact(contact)}>
+                        <Sparkles className="w-4 h-4 mr-2" />
+                        Enrich Data
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuSeparator />
+                    {onSendLinkedInRequest && (
+                      <DropdownMenuItem onClick={() => onSendLinkedInRequest(contact)}>
+                        <Linkedin className="w-4 h-4 mr-2" />
+                        Send Connection
+                      </DropdownMenuItem>
+                    )}
+                    {onSendEmail && (
+                      <DropdownMenuItem onClick={() => onSendEmail(contact)}>
+                        <Mail className="w-4 h-4 mr-2" />
+                        Send Email
+                      </DropdownMenuItem>
+                    )}
+                    {onWriteMessage && (
+                      <DropdownMenuItem onClick={() => onWriteMessage(contact)}>
+                        <MessageSquare className="w-4 h-4 mr-2" />
+                        Write Message
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => onDeleteContact(contact)}
+                      className="text-red-600"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </TableCell>
+            </TableRow>
+          ))}
         </TableBody>
       </Table>
     </div>
