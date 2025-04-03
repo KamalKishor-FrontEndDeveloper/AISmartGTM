@@ -93,14 +93,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Signup Step 1 Error:", error);
-      
+
       if (error instanceof z.ZodError) {
         return res.status(400).json({ 
           message: "Validation error", 
           errors: error.errors 
         });
       }
-      
+
       return res.status(500).json({ 
         message: "An error occurred during signup. Please try again.",
         error: error instanceof Error ? error.message : "Unknown error"
@@ -352,7 +352,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/contacts", authenticateRequest, async (req, res) => {
     try {
       const user = (req as any).user;
-      const contactData = { ...req.body, userId: user.id };
+      // If companyName is provided but no companyId, ensure it's saved
+      const contactData = {
+        ...req.body,
+        userId: user.id,
+        companyName: req.body.companyName || (req.body.companyId ? undefined : req.body.company)
+      };
 
       const validatedData = insertContactSchema.parse(contactData);
       const contact = await storage.createContact(validatedData);
@@ -908,7 +913,7 @@ async function verifyEmail(email: string): Promise<boolean> {
       });
 
       const data = await response.json();
-      
+
       if (data.email) {
         return res.status(200).json({
           email: data.email,
