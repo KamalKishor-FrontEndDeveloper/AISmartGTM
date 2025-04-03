@@ -1,5 +1,5 @@
+
 import React from "react";
-import { Company } from "@shared/schema";
 import { UseFormReturn } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { 
@@ -21,16 +21,35 @@ import {
 } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 
+const industryOptions = [
+  "Technology",
+  "Healthcare",
+  "Finance",
+  "Education",
+  "Manufacturing",
+  "Retail",
+  "Consulting",
+  "Real Estate",
+  "Other"
+];
+
+const teamSizeOptions = [
+  "1-10",
+  "11-50",
+  "51-200",
+  "201-500",
+  "501-1000",
+  "1000+"
+];
+
 interface ContactFormProps {
   form: UseFormReturn<any>;
-  companies: Company[];
   onSubmit: (data: any) => void;
   isSubmitting: boolean;
 }
 
 export default function ContactForm({ 
   form, 
-  companies, 
   onSubmit, 
   isSubmitting 
 }: ContactFormProps) {
@@ -98,34 +117,13 @@ export default function ContactForm({
           
           <FormField
             control={form.control}
-            name="companyId"
+            name="companyName"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Company</FormLabel>
-                <Select 
-                  onValueChange={(value) => {
-                    if (value === 'none') {
-                      field.onChange(undefined);
-                    } else {
-                      field.onChange(parseInt(value));
-                    }
-                  }}
-                  value={field.value?.toString() || 'none'}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select company" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
-                    {companies.map((company) => (
-                      <SelectItem key={company.id} value={company.id.toString()}>
-                        {company.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <FormControl>
+                  <Input placeholder="Enter company name" {...field} />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -135,13 +133,24 @@ export default function ContactForm({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
-            name="location"
+            name="industry"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Location</FormLabel>
-                <FormControl>
-                  <Input placeholder="Enter location" {...field} />
-                </FormControl>
+                <FormLabel>Industry</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select industry" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {industryOptions.map((industry) => (
+                      <SelectItem key={industry} value={industry}>
+                        {industry}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
@@ -149,18 +158,43 @@ export default function ContactForm({
           
           <FormField
             control={form.control}
-            name="linkedInUrl"
+            name="teamSize"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>LinkedIn URL</FormLabel>
-                <FormControl>
-                  <Input placeholder="Enter LinkedIn profile URL" {...field} />
-                </FormControl>
+                <FormLabel>Team Size</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select team size" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {teamSizeOptions.map((size) => (
+                      <SelectItem key={size} value={size}>
+                        {size}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
           />
         </div>
+
+        <FormField
+          control={form.control}
+          name="linkedInUrl"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>LinkedIn URL</FormLabel>
+              <FormControl>
+                <Input placeholder="Enter LinkedIn profile URL" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         
         <FormField
           control={form.control}
