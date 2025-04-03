@@ -58,10 +58,8 @@ const contactFormSchema = z.object({
   companyName: z.string().optional().or(z.literal("")),
   industry: z.string().optional().or(z.literal("")),
   teamSize: z.string().optional().or(z.literal("")),
-  location: z.string().optional().or(z.literal("")),
   linkedInUrl: z.string().optional().or(z.literal("")),
   notes: z.string().optional().or(z.literal("")),
-  tags: z.array(z.string()).optional()
 });
 
 type ContactFormValues = z.infer<typeof contactFormSchema>;
@@ -92,7 +90,7 @@ export default function ContactsNewPage() {
     mutationFn: async (contact: Contact) => {
       const [firstName, ...lastNameParts] = contact.fullName.split(' ');
       const lastName = lastNameParts.join(' ');
-      
+
       const response = await fetch('/api/email/find', {
         method: 'POST',
         headers: {
@@ -105,7 +103,7 @@ export default function ContactsNewPage() {
           domainOrCompany: contact.companyName
         })
       });
-      
+
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data.message || 'Failed to find email');
@@ -279,11 +277,11 @@ export default function ContactsNewPage() {
       email: editContact?.email || "",
       phone: editContact?.phone || "",
       jobTitle: editContact?.jobTitle || "",
-      companyId: editContact?.companyId || undefined,
-      location: editContact?.location || "",
+      companyName: editContact?.companyName || "",
+      industry: editContact?.industry || "",
+      teamSize: editContact?.teamSize || "",
       linkedInUrl: editContact?.linkedInUrl || "",
       notes: editContact?.notes || "",
-      tags: editContact?.tags || []
     }
   });
 
@@ -295,11 +293,11 @@ export default function ContactsNewPage() {
         email: editContact.email || "",
         phone: editContact.phone || "",
         jobTitle: editContact.jobTitle || "",
-        companyId: editContact.companyId || undefined,
-        location: editContact.location || "",
+        companyName: editContact.companyName || "",
+        industry: editContact.industry || "",
+        teamSize: editContact.teamSize || "",
         linkedInUrl: editContact.linkedInUrl || "",
-        notes: editContact.notes || "",
-        tags: editContact.tags || []
+        notes: editContact.notes || ""
       });
       setIsEditDialogOpen(true);
     } else {
@@ -308,11 +306,11 @@ export default function ContactsNewPage() {
         email: "",
         phone: "",
         jobTitle: "",
-        companyId: undefined,
-        location: "",
+        companyName: "",
+        industry: "",
+        teamSize: "",
         linkedInUrl: "",
-        notes: "",
-        tags: []
+        notes: ""
       });
     }
   }, [editContact, form]);
