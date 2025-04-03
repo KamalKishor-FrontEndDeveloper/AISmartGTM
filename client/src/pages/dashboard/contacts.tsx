@@ -192,11 +192,13 @@ export default function ContactsNewPage() {
   // Update contact mutation
   const updateContactMutation = useMutation({
     mutationFn: async ({ id, contact }: { id: number, contact: ContactFormValues }) => {
-      const response = await apiRequest(`/api/contacts/${id}`, {
+      return apiRequest(`/api/contacts/${id}`, {
         method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(contact)
       });
-      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/contacts"] });

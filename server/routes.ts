@@ -899,11 +899,16 @@ async function verifyEmail(email: string): Promise<boolean> {
         return res.status(400).json({ message: "Insufficient credits" });
       }
 
+      const icypeasKey = process.env.ICYPEAS_API_KEY;
+      if (!icypeasKey) {
+        throw new Error('ICYPEAS_API_KEY is not configured');
+      }
+
       const response = await fetch('https://app.icypeas.com/api/email-search', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.ICYPEAS_API_KEY}`
+          'Authorization': icypeasKey
         },
         body: JSON.stringify({
           firstname: firstName,
