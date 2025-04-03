@@ -42,7 +42,8 @@ import {
   UserCircle,
   List,
   Upload,
-  Loader2
+  Loader2,
+  Search
 } from "lucide-react";
 
 interface ContactsTableProps {
