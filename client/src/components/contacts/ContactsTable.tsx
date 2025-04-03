@@ -40,7 +40,8 @@ import {
   MessageSquare,
   Building2,
   UserCircle,
-  List
+  List,
+  Upload
 } from "lucide-react";
 
 interface ContactsTableProps {
@@ -53,6 +54,9 @@ interface ContactsTableProps {
   onEnrichContact?: (contact: Contact) => void;
   onSendEmail?: (contact: Contact) => void;
   isRevealingEmail: boolean;
+  handleAIWriter: (contact: Contact) => void; // Added function
+  handleCRMExport: (contact: Contact) => void; // Added function
+
 }
 
 export default function ContactsTable({
@@ -64,7 +68,9 @@ export default function ContactsTable({
   onViewDetails,
   onEnrichContact,
   onSendEmail,
-  isRevealingEmail
+  isRevealingEmail,
+  handleAIWriter,
+  handleCRMExport
 }: ContactsTableProps) {
   return (
     <div className="w-full overflow-auto">
@@ -252,12 +258,7 @@ export default function ContactsTable({
                         Send Email
                       </DropdownMenuItem>
                     )}
-                    <DropdownMenuItem onClick={() => window.location.href = `/dashboard/ai-writer?contact=${encodeURIComponent(JSON.stringify({
-                      id: contact.id,
-                      fullName: contact.fullName,
-                      jobTitle: contact.jobTitle || "",
-                      companyName: contact.companyName || ""
-                    }))}`}>
+                    <DropdownMenuItem onClick={() => handleAIWriter(contact)}>
                       <MessageSquare className="w-4 h-4 mr-2" />
                       AI Writer
                     </DropdownMenuItem>
@@ -268,10 +269,11 @@ export default function ContactsTable({
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={() => onDeleteContact(contact)}
-                      className="text-red-600"
-                    >
+                    <DropdownMenuItem onClick={() => handleCRMExport(contact)}>
+                      <Upload className="w-4 h-4 mr-2" />
+                      Export to CRM
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onDeleteContact(contact)}>
                       <Trash2 className="w-4 h-4 mr-2" />
                       Delete
                     </DropdownMenuItem>

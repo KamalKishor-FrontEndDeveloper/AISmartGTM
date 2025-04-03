@@ -20,12 +20,39 @@ const APOLLO_API_KEY = process.env.APOLLO_API_KEY;
 const HUNTER_API_KEY = process.env.HUNTER_API_KEY;
 const CLEARBIT_API_KEY = process.env.CLEARBIT_API_KEY;
 
-async function enrichWithIcypeas(fullName: string, domain: string): Promise<EnrichmentResult> {
+async function enrichWithIcypeas(firstName: string, lastName: string, domain: string): Promise<EnrichmentResult> {
   try {
-    const response = await axios.get(`https://api.icypeas.com/v1/enrich`, {
-      headers: { 'Authorization': `Bearer ${ICYPEAS_API_KEY}` },
-      params: { name: fullName, domain }
+    // Email search
+    const searchResponse = await axios.post('https://app.icypeas.com/api/email-search', {
+      firstname: firstName,
+      lastname: lastName,
+      domainOrCompany: domain,
+      customObject: {
+        externalId: `${firstName}-${lastName}-${domain}`
+      }
+    }, {
+      headers: { 'Authorization': `Bearer ${ICYPEAS_API_KEY}` }
     });
+
+    const email = searchResponse.data.email;
+    
+    if (email) {
+      // Email verification
+      const verifyResponse = await axios.post('https://app.icypeas.com/api/email-verification', {
+        email,
+        customObject: {
+          externalId: `verify-${email}`
+        }
+      }, {
+        headers: { 'Authorization': `Bearer ${ICYPEAS_API_KEY}` }
+      });
+
+      return {
+        email,
+        verified: verifyResponse.data.isValid,
+        enrichmentSource: 'icypeas'
+      };
+    }
     return {
       email: response.data.email,
       enrichmentSource: 'icypeas'
