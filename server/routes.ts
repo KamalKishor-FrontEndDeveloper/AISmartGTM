@@ -911,9 +911,9 @@ async function verifyEmail(email: string): Promise<boolean> {
           'Authorization': `Bearer ${icypeasKey}`
         },
         body: JSON.stringify({
-          firstName: firstName,
-          lastName: lastName,
-          domainOrCompany,
+          firstname: firstName,
+          lastname: lastName,
+          domain: domainOrCompany,
           customObject: {
             externalId: `${firstName}-${lastName}-${Date.now()}`
           }
@@ -922,7 +922,7 @@ async function verifyEmail(email: string): Promise<boolean> {
 
       const data = await response.json();
 
-      if (data.email) {
+      if (data.data && data.data.email) {
         return res.status(200).json({
           email: data.email,
           creditsUsed: findCost,
