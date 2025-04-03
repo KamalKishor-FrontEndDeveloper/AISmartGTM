@@ -165,9 +165,16 @@ export default function ContactsTable({
                       variant="outline" 
                       size="sm"
                       onClick={() => onVerifyEmail?.(contact)}
-                      disabled={!contact.email || !onVerifyEmail}
+                      disabled={!contact.email || !onVerifyEmail || isVerifyingEmail}
                     >
-                      Verify Email
+                      {isVerifyingEmail ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Verifying...
+                        </>
+                      ) : (
+                        "Verify Email"
+                      )}
                     </Button>
                   )}
                 </div>

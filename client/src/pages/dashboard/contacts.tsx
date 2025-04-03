@@ -696,6 +696,7 @@ export default function ContactsNewPage() {
                   onWriteMessage={handleWriteMessage}
                   onVerifyEmail={handleVerifyEmail}
                   isRevealingEmail={isRevealingEmail}
+                  isVerifyingEmail={verifyEmailMutation.isPending}
                   pageSize={pageSize}
                   onPageSizeChange={handlePageSizeChange}
                 />
