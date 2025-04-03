@@ -56,7 +56,11 @@ export default function StepOne({ onSubmit, defaultValues, isSubmitting }: StepO
             <FormItem>
               <FormLabel>Full Name</FormLabel>
               <FormControl>
-                <Input placeholder="Enter your full name" {...field} />
+                <Input 
+  placeholder="Enter your full name" 
+  className="h-11 px-4 transition-shadow duration-200 hover:shadow-md focus:shadow-md" 
+  {...field} 
+/>
               </FormControl>
               <FormMessage />
             </FormItem>

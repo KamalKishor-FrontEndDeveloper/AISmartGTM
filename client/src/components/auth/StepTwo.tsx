@@ -69,7 +69,7 @@ export default function StepTwo({ onSubmit, defaultValues, isSubmitting }: StepT
             </FormItem>
           )}
         />
-        
+
         <FormField
           control={form.control}
           name="industry"
@@ -81,7 +81,7 @@ export default function StepTwo({ onSubmit, defaultValues, isSubmitting }: StepT
                 defaultValue={field.value}
               >
                 <FormControl>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-11 transition-shadow duration-200 hover:shadow-md focus:shadow-md">
                     <SelectValue placeholder="Select your industry" />
                   </SelectTrigger>
                 </FormControl>
@@ -97,7 +97,7 @@ export default function StepTwo({ onSubmit, defaultValues, isSubmitting }: StepT
             </FormItem>
           )}
         />
-        
+
         <FormField
           control={form.control}
           name="role"
@@ -109,7 +109,7 @@ export default function StepTwo({ onSubmit, defaultValues, isSubmitting }: StepT
                 defaultValue={field.value}
               >
                 <FormControl>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-11 transition-shadow duration-200 hover:shadow-md focus:shadow-md">
                     <SelectValue placeholder="Select your role" />
                   </SelectTrigger>
                 </FormControl>
@@ -125,7 +125,7 @@ export default function StepTwo({ onSubmit, defaultValues, isSubmitting }: StepT
             </FormItem>
           )}
         />
-        
+
         <div className="pt-4 flex space-x-4">
           <Button 
             type="button" 
