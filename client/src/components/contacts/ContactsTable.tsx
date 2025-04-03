@@ -56,8 +56,8 @@ interface ContactsTableProps {
   onSendEmail?: (contact: Contact) => void;
   isRevealingEmail: boolean;
   isVerifyingEmail?: boolean;
-  isEmailFinding: boolean;
-  findingEmailId: number | null;
+  isEmailFinding?: boolean;
+  findingEmailId?: number | null;
   onEmailFind?: (contact: Contact) => void;
   handleAIWriter: (contact: Contact) => void;
   onVerifyEmail?: (contact: Contact) => void;
@@ -77,6 +77,9 @@ export default function ContactsTable({
   onSendEmail,
   isRevealingEmail,
   isVerifyingEmail = false,
+  isEmailFinding = false,
+  findingEmailId = null,
+  onEmailFind,
   onVerifyEmail,
   handleAIWriter,
   handleCRMExport,
