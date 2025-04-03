@@ -588,7 +588,7 @@ export default function ContactsNewPage() {
                 
                 <div className="flex items-center space-x-2">
                   <span className="text-sm text-gray-500">
-                    Showing {filteredContacts.length > 0 ? 1 : 0} - {Math.min(paginatedContacts.length, itemsPerPage)} of {filteredContacts.length}
+                    Showing {filteredContacts.length > 0 ? 1 : 0} - {Math.min(paginatedContacts.length, pageSize)} of {filteredContacts.length}
                   </span>
                   
                   <div className="flex items-center space-x-1">
