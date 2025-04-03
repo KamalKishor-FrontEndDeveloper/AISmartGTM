@@ -55,6 +55,7 @@ interface ContactsTableProps {
   onSendEmail?: (contact: Contact) => void;
   isRevealingEmail: boolean;
   handleAIWriter: (contact: Contact) => void;
+  onVerifyEmail: (contact: Contact) => void;
   handleCRMExport: (contact: Contact) => void;
   pageSize?: number;
   onPageSizeChange?: (size: number) => void;
@@ -155,7 +156,22 @@ export default function ContactsTable({
                   {contact.email || "N/A"}
                 </div>
               </TableCell>
-              <TableCell>{contact.emailVerified ? "Yes" : "No"}</TableCell> {/* Added Email Verified status */}
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  {contact.emailVerified ? (
+                    <Badge variant="success">Verified</Badge>
+                  ) : (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => onVerifyEmail(contact)}
+                      disabled={!contact.email}
+                    >
+                      Verify Email
+                    </Button>
+                  )}
+                </div>
+              </TableCell>
               <TableCell>
                 <div className="flex items-center gap-2">
                   <Phone className="w-4 h-4 text-muted-foreground" />

@@ -81,7 +81,8 @@ export default function ContactsNewPage() {
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
   const [isWriteMessageDialogOpen, setIsWriteMessageDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  
+  const [isVerifyingEmail, setIsVerifyingEmail] = useState(false);
+
   // Get user's contacts
   const { data, isLoading } = useQuery({
     queryKey: ["/api/contacts"],
@@ -95,7 +96,7 @@ export default function ContactsNewPage() {
       return res.json();
     }
   });
-  
+
   // Get user's companies for the form dropdown
   const { data: companiesData } = useQuery({
     queryKey: ["/api/companies"],
@@ -109,7 +110,7 @@ export default function ContactsNewPage() {
       return res.json();
     }
   });
-  
+
   // Create contact mutation
   const createContactMutation = useMutation({
     mutationFn: async (contact: ContactFormValues) => {
@@ -134,7 +135,7 @@ export default function ContactsNewPage() {
       });
     }
   });
-  
+
   // Update contact mutation
   const updateContactMutation = useMutation({
     mutationFn: async ({ id, contact }: { id: number, contact: ContactFormValues }) => {
@@ -160,7 +161,7 @@ export default function ContactsNewPage() {
       });
     }
   });
-  
+
   // Delete contact mutation
   const deleteContactMutation = useMutation({
     mutationFn: async (id: number) => {
@@ -185,7 +186,7 @@ export default function ContactsNewPage() {
       });
     }
   });
-  
+
   // Reveal email mutation
   const revealEmailMutation = useMutation({
     mutationFn: async (contactId: number) => {
@@ -211,7 +212,7 @@ export default function ContactsNewPage() {
       setIsRevealingEmail(false);
     }
   });
-  
+
   // Create separate state for edit contact to avoid conflicts with other dialogs
   const [editContact, setEditContact] = useState<Contact | null>(null);
 
@@ -230,7 +231,7 @@ export default function ContactsNewPage() {
       tags: editContact?.tags || []
     }
   });
-  
+
   // Reset form when edit contact changes
   useEffect(() => {
     if (editContact) {
@@ -260,13 +261,13 @@ export default function ContactsNewPage() {
       });
     }
   }, [editContact, form]);
-  
+
   // Handle revealing email
   const handleRevealEmail = (contactId: number) => {
     setIsRevealingEmail(true);
     revealEmailMutation.mutate(contactId);
   };
-  
+
   // Handle contact enrichment
   const [enrichmentOptions, setEnrichmentOptions] = useState([
     { id: "email", label: "Email Address", creditCost: 2, checked: true, icon: <Mail className="h-4 w-4 text-blue-500" /> },
@@ -274,7 +275,7 @@ export default function ContactsNewPage() {
     { id: "social", label: "Social Profiles", creditCost: 1, checked: false, icon: <Linkedin className="h-4 w-4 text-blue-600" /> },
     { id: "company", label: "Company Details", creditCost: 4, checked: false, icon: <Building className="h-4 w-4 text-amber-500" /> }
   ]);
-  
+
   const toggleEnrichmentOption = (id: string) => {
     setEnrichmentOptions(options => 
       options.map(option => 
@@ -282,19 +283,19 @@ export default function ContactsNewPage() {
       )
     );
   };
-  
+
   const getTotalEnrichmentCost = () => {
     return enrichmentOptions
       .filter(option => option.checked)
       .reduce((total, option) => total + option.creditCost, 0);
   };
-  
+
   const enrichContactMutation = useMutation({
     mutationFn: async (contactId: number) => {
       const options = enrichmentOptions
         .filter(option => option.checked)
         .map(option => option.id);
-      
+
       const response = await fetch("/api/enrich/contact", {
         method: "POST",
         headers: {
@@ -306,12 +307,12 @@ export default function ContactsNewPage() {
           options
         })
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || "Failed to enrich contact");
       }
-      
+
       return response.json();
     },
     onSuccess: (data) => {
@@ -331,16 +332,16 @@ export default function ContactsNewPage() {
       });
     }
   });
-  
+
   // Generate LinkedIn message
   const [isGeneratingMessage, setIsGeneratingMessage] = useState(false);
   const [generatedMessage, setGeneratedMessage] = useState("");
-  
+
   // Generate Email message
   const [isGeneratingEmailMessage, setIsGeneratingEmailMessage] = useState(false);
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
-  
+
   const generateLinkedInMessage = async (contact: Contact) => {
     setIsGeneratingMessage(true);
     try {
@@ -361,11 +362,11 @@ export default function ContactsNewPage() {
           tone: "professional"
         })
       });
-      
+
       if (!response.ok) {
         throw new Error("Failed to generate message");
       }
-      
+
       const data = await response.json();
       setGeneratedMessage(data.message);
     } catch (error) {
@@ -378,12 +379,12 @@ export default function ContactsNewPage() {
       setIsGeneratingMessage(false);
     }
   };
-  
+
   const generateEmailMessage = async (contact: Contact) => {
     setIsGeneratingEmailMessage(true);
     setEmailSubject(`Introduction from ${user?.fullName}`);
     setEmailBody(`Dear ${contact.fullName},\n\nI hope this email finds you well.\n\nI wanted to reach out to discuss how we might be able to collaborate.\n\nBest regards,\n${user?.fullName}`);
-    
+
     try {
       const response = await fetch("/api/message/generate", {
         method: "POST",
@@ -402,11 +403,11 @@ export default function ContactsNewPage() {
           tone: "professional"
         })
       });
-      
+
       if (!response.ok) {
         throw new Error("Failed to generate email");
       }
-      
+
       const data = await response.json();
       // Format the email with subject line
       setEmailSubject(`Connecting with ${contact.fullName} from ${companiesData?.companies.find((c: any) => c.id === contact.companyId)?.name || "your company"}`);
@@ -421,7 +422,7 @@ export default function ContactsNewPage() {
       setIsGeneratingEmailMessage(false);
     }
   };
-  
+
   // Handle LinkedIn connection request
   const sendLinkedInRequestMutation = useMutation({
     mutationFn: async ({ contactId, message }: { contactId: number, message: string }) => {
@@ -447,7 +448,7 @@ export default function ContactsNewPage() {
       });
     }
   });
-  
+
   // Handle writing AI message
   const handleWriteMessage = (contact: Contact) => {
     setSelectedContact(contact);
@@ -460,7 +461,7 @@ export default function ContactsNewPage() {
     }));
     window.location.href = `/dashboard/ai-writer?contact=${contactParams}`;
   };
-  
+
   // Send email mutation
   const sendEmailMutation = useMutation({
     mutationFn: async ({ contactId, subject, body }: { contactId: number, subject: string, body: string }) => {
@@ -486,11 +487,66 @@ export default function ContactsNewPage() {
       });
     }
   });
-  
+
+  // Email verification mutation
+  const verifyEmailMutation = useMutation({
+    mutationFn: async (contact: Contact) => {
+      if (!contact.email) {
+        throw new Error("No email to verify");
+      }
+      const response = await fetch("/api/verify-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("authToken")}`
+        },
+        body: JSON.stringify({ email: contact.email })
+      });
+      if (!response.ok) {
+        throw new Error("Failed to verify email");
+      }
+      return response.json();
+    },
+    onSuccess: (data, contact) => {
+      queryClient.setQueryData(["/api/contacts"], (oldData: any) => {
+        return {
+          ...oldData,
+          contacts: oldData.contacts.map((c: Contact) =>
+            c.id === contact.id ? { ...c, emailVerified: data.isValid } : c
+          )
+        };
+      });
+      toast({
+        title: data.isValid ? "Email Verified" : "Email Invalid",
+        description: `${contact.email} is ${data.isValid ? "valid" : "invalid"}`,
+        variant: data.isValid ? "default" : "destructive"
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  const handleVerifyEmail = async (contact: Contact) => {
+    if (!contact.email) {
+      toast({
+        title: "Error",
+        description: "No email address to verify",
+        variant: "destructive"
+      });
+      return;
+    }
+    verifyEmailMutation.mutate(contact);
+  };
+
   // Filter contacts based on search term
   const filteredContacts = data?.contacts.filter((contact: Contact) => {
     if (!searchTerm) return true;
-    
+
     const search = searchTerm.toLowerCase();
     return (
       contact.fullName.toLowerCase().includes(search) ||
@@ -499,23 +555,23 @@ export default function ContactsNewPage() {
       (contact.location && contact.location.toLowerCase().includes(search))
     );
   }) || [];
-  
+
   // Calculate pagination
   const totalPages = Math.ceil((filteredContacts?.length || 0) / pageSize);
   const paginatedContacts = filteredContacts.slice(
     (currentPage - 1) * pageSize,
     currentPage * pageSize
   );
-  
+
   const handlePageSizeChange = (newSize: number) => {
     setPageSize(newSize);
     setCurrentPage(1); // Reset to first page when changing page size
   };
-  
+
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
-  
+
   return (
     <div className="w-full">
       <div className="flex items-center justify-between mb-4 border-b pb-2">
@@ -537,14 +593,14 @@ export default function ContactsNewPage() {
           <span className="font-medium text-primary-500">{user?.credits || 0}</span> Credits Available
         </div>
       </div>
-      
+
       <div className="flex flex-col md:flex-row gap-4">
         {isFiltersVisible && (
           <div className="w-full md:w-64 flex-shrink-0">
             <ContactFilters />
           </div>
         )}
-        
+
         <div className="flex-grow">
           <Card>
             <CardHeader className="p-4 border-b">
@@ -574,7 +630,7 @@ export default function ContactsNewPage() {
                     )}
                     {isFiltersVisible ? "Hide Filters" : "Filters"}
                   </Button>
-                  
+
                   <div className="relative">
                     <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <Input
@@ -585,12 +641,12 @@ export default function ContactsNewPage() {
                     />
                   </div>
                 </div>
-                
+
                 <div className="flex items-center space-x-2">
                   <span className="text-sm text-gray-500">
                     Showing {filteredContacts.length > 0 ? 1 : 0} - {Math.min(paginatedContacts.length, pageSize)} of {filteredContacts.length}
                   </span>
-                  
+
                   <div className="flex items-center space-x-1">
                     <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                       <Grid className="h-4 w-4 text-blue-500" />
@@ -601,7 +657,7 @@ export default function ContactsNewPage() {
                   </div>
                 </div>
               </div>
-              
+
               {isLoading ? (
                 <div className="flex justify-center items-center py-12">
                   <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
@@ -638,6 +694,7 @@ export default function ContactsNewPage() {
                     generateEmailMessage(contact);
                   }}
                   onWriteMessage={handleWriteMessage}
+                  onVerifyEmail={handleVerifyEmail}
                   isRevealingEmail={isRevealingEmail}
                   pageSize={pageSize}
                   onPageSizeChange={handlePageSizeChange}
@@ -661,7 +718,7 @@ export default function ContactsNewPage() {
                   </Button>
                 </div>
               )}
-              
+
               {filteredContacts.length > 0 && (
                 <div className="flex items-center justify-between border-t p-3">
                   <div className="flex items-center space-x-1">
@@ -674,11 +731,11 @@ export default function ContactsNewPage() {
                     >
                       <ArrowLeft className="h-4 w-4 mr-1" /> Previous
                     </Button>
-                    
+
                     <div className="px-2">
                       <span className="text-sm">{currentPage} of {totalPages}</span>
                     </div>
-                    
+
                     <Button 
                       variant="ghost" 
                       size="sm" 
@@ -695,7 +752,7 @@ export default function ContactsNewPage() {
           </Card>
         </div>
       </div>
-      
+
       {/* Create Contact Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent className="max-w-xl">
@@ -705,7 +762,7 @@ export default function ContactsNewPage() {
               Create a new contact in your CRM system
             </DialogDescription>
           </DialogHeader>
-          
+
           <ContactForm 
             form={form} 
             companies={companiesData?.companies || []}
@@ -714,7 +771,7 @@ export default function ContactsNewPage() {
           />
         </DialogContent>
       </Dialog>
-      
+
       {/* Edit Contact Dialog */}
       <Dialog 
         open={isEditDialogOpen} 
@@ -730,7 +787,7 @@ export default function ContactsNewPage() {
               Update this contact's information
             </DialogDescription>
           </DialogHeader>
-          
+
           {editContact && (
             <ContactForm 
               form={form} 
@@ -741,7 +798,7 @@ export default function ContactsNewPage() {
           )}
         </DialogContent>
       </Dialog>
-      
+
       {/* Delete Contact Dialog */}
       {selectedContact && (
         <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
@@ -777,7 +834,7 @@ export default function ContactsNewPage() {
           </DialogContent>
         </Dialog>
       )}
-      
+
       {/* LinkedIn Connection Request Dialog */}
       {selectedContact && (
         <Dialog open={isLinkedInDialogOpen} onOpenChange={setIsLinkedInDialogOpen}>
@@ -788,7 +845,7 @@ export default function ContactsNewPage() {
                 Send a personalized connection request to {selectedContact.fullName}
               </DialogDescription>
             </DialogHeader>
-            
+
             <div className="space-y-4 py-4">
               <div className="flex items-start space-x-4">
                 <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
@@ -799,7 +856,7 @@ export default function ContactsNewPage() {
                   <p className="text-sm text-gray-500">{selectedContact.jobTitle}</p>
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <label className="text-sm font-medium">
                   Personalized Message
@@ -836,7 +893,7 @@ export default function ContactsNewPage() {
                 </div>
               </div>
             </div>
-            
+
             <DialogFooter>
               <Button 
                 variant="outline" 
@@ -868,7 +925,7 @@ export default function ContactsNewPage() {
           </DialogContent>
         </Dialog>
       )}
-      
+
       {/* Contact Enrichment Dialog */}
       {selectedContact && (
         <Dialog open={isEnrichmentDialogOpen} onOpenChange={setIsEnrichmentDialogOpen}>
@@ -879,7 +936,7 @@ export default function ContactsNewPage() {
                 Use AI to find additional information about {selectedContact.fullName}
               </DialogDescription>
             </DialogHeader>
-            
+
             <div className="space-y-4 py-4">
               <div className="flex items-start space-x-4">
                 <div className="w-10 h-10 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0">
@@ -890,7 +947,7 @@ export default function ContactsNewPage() {
                   <p className="text-sm text-gray-500">{selectedContact.jobTitle}</p>
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <label className="text-sm font-medium">
                   Select data to enrich:
@@ -924,19 +981,19 @@ export default function ContactsNewPage() {
                   </CardContent>
                 </Card>
               </div>
-              
+
               <div className="flex items-center justify-between p-3 border rounded-md bg-gray-50">
                 <span className="text-sm font-medium">Total Cost</span>
                 <Badge variant="outline" className="bg-white">
                   {getTotalEnrichmentCost()} Credit{getTotalEnrichmentCost() > 1 ? 's' : ''}
                 </Badge>
               </div>
-              
+
               <div className="text-sm text-gray-500">
                 Your available credits: <span className="font-medium">{user?.credits || 0}</span>
               </div>
             </div>
-            
+
             <DialogFooter>
               <Button 
                 variant="outline" 
@@ -961,7 +1018,7 @@ export default function ContactsNewPage() {
           </DialogContent>
         </Dialog>
       )}
-      
+
       {/* Send Email Dialog */}
       {selectedContact && (
         <SendEmailDialog
