@@ -92,6 +92,7 @@ export default function ContactsTable({
             <TableHead>Website</TableHead>
             <TableHead>Company Emails</TableHead>
             <TableHead>Contact Emails</TableHead>
+            <TableHead>Email Verified</TableHead> {/* Added Email Verified column */}
             <TableHead>Company Phones</TableHead>
             <TableHead>Contact Phones</TableHead>
             <TableHead>Contact Socials</TableHead>
@@ -154,6 +155,7 @@ export default function ContactsTable({
                   {contact.email || "N/A"}
                 </div>
               </TableCell>
+              <TableCell>{contact.emailVerified ? "Yes" : "No"}</TableCell> {/* Added Email Verified status */}
               <TableCell>
                 <div className="flex items-center gap-2">
                   <Phone className="w-4 h-4 text-muted-foreground" />

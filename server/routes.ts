@@ -840,6 +840,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Email verification endpoint
+  app.post("/api/verify-email", authenticateRequest, async (req, res) => {
+    try {
+      const user = (req as any).user;
+      const { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+
+      // Credit cost for email verification
+      const verifyCost = 1;
+      const updatedCredits = await storage.useCredits(
+        user.id,
+        verifyCost,
+        `Email verification for ${email}`
+      );
+
+      if (updatedCredits === null) {
+        return res.status(400).json({ message: "Insufficient credits" });
+      }
+
+      const isValid = await verifyEmail(email);
+
+      return res.status(200).json({
+        success: true,
+        isValid,
+        creditsUsed: verifyCost,
+        creditsRemaining: updatedCredits
+      });
+    } catch (error) {
+      console.error("Error verifying email:", error);
+      return res.status(500).json({ message: "Failed to verify email" });
+    }
+  });
+
   // NEW ROUTE
   app.post("/api/enrich/contact", authenticateRequest, async (req, res) => {
     try {

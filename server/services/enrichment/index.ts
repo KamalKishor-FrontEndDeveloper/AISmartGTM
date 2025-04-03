@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 
 interface EnrichmentResult {
@@ -35,7 +34,7 @@ async function enrichWithIcypeas(firstName: string, lastName: string, domain: st
     });
 
     const email = searchResponse.data.email;
-    
+
     if (email) {
       // Email verification
       const verifyResponse = await axios.post('https://app.icypeas.com/api/email-verification', {
@@ -54,7 +53,7 @@ async function enrichWithIcypeas(firstName: string, lastName: string, domain: st
       };
     }
     return {
-      email: response.data.email,
+      email: searchResponse.data.email, // Corrected to use searchResponse
       enrichmentSource: 'icypeas'
     };
   } catch (error) {
@@ -147,7 +146,7 @@ export async function enrichContactData(fullName: string, domain: string): Promi
 
   // Combine results from all APIs
   const enrichedData: EnrichmentResult = {};
-  
+
   results.forEach((result) => {
     if (result.status === 'fulfilled' && result.value) {
       Object.entries(result.value).forEach(([key, value]) => {
@@ -159,4 +158,21 @@ export async function enrichContactData(fullName: string, domain: string): Promi
   });
 
   return enrichedData;
+}
+
+export async function verifyEmail(email: string): Promise<boolean> {
+  try {
+    const response = await axios.post('https://app.icypeas.com/api/email-verification', {
+      email,
+      customObject: {
+        webhookUrl: `${process.env.API_URL}/api/webhook/email-verification`,
+        externalId: `verify_${Date.now()}`
+      }
+    });
+
+    return response.data.isValid || false;
+  } catch (error) {
+    console.error('Email verification error:', error);
+    return false;
+  }
 }
