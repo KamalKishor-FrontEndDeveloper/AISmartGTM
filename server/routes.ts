@@ -840,7 +840,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Email verification endpoint
+  // Email verification function
+async function verifyEmail(email: string): Promise<boolean> {
+  try {
+    const response = await fetch('https://app.icypeas.com/api/email-verification', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.ICYPEAS_API_KEY}`
+      },
+      body: JSON.stringify({
+        email,
+        customobject: {
+          webhookUrl: process.env.WEBHOOK_URL,
+          externalId: Date.now().toString()
+        }
+      })
+    });
+
+    const data = await response.json();
+    return data.isValid || false;
+  } catch (error) {
+    console.error('Error verifying email:', error);
+    return false;
+  }
+}
+
+// Email verification endpoint
   app.post("/api/verify-email", authenticateRequest, async (req, res) => {
     try {
       const user = (req as any).user;
