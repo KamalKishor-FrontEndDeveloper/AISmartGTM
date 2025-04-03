@@ -74,6 +74,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AUTH ROUTES
   app.post("/api/auth/signup/step1", async (req, res) => {
     try {
+      if (!req.body) {
+        return res.status(400).json({ message: "Request body is required" });
+      }
+
       const validatedData = stepOneSchema.parse(req.body);
 
       // Check if user with email already exists
@@ -88,13 +92,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         data: validatedData 
       });
     } catch (error) {
+      console.error("Signup Step 1 Error:", error);
+      
       if (error instanceof z.ZodError) {
         return res.status(400).json({ 
           message: "Validation error", 
           errors: error.errors 
         });
       }
-      return res.status(500).json({ message: "Server error" });
+      
+      return res.status(500).json({ 
+        message: "An error occurred during signup. Please try again.",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
     }
   });
 
