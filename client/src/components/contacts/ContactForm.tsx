@@ -122,7 +122,15 @@ export default function ContactForm({
               <FormItem>
                 <FormLabel>Company</FormLabel>
                 <FormControl>
-                  <Input placeholder="Enter company name" {...field} />
+                  <Input 
+                    placeholder="Enter company name" 
+                    {...field}
+                    onChange={(e) => {
+                      field.onChange(e.target.value);
+                      // Clear companyId when manually entering company name
+                      form.setValue('companyId', undefined);
+                    }}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
