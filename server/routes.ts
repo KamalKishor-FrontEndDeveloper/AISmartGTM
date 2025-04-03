@@ -801,7 +801,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/contact/enrich", authenticateRequest, async (req, res) => {
     try {
       const user = (req as any).user;
-      const { contactId } = req.body;
+      const { contactId, options } = req.body;
 
       if (!contactId) {
         return res.status(400).json({ message: "Contact ID is required" });
@@ -812,8 +812,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Contact not found" });
       }
 
-      // Credit cost for enrichment
-      const enrichCost = 5;
+      // Calculate enrichment cost based on selected options
+      const enrichCost = options?.reduce((total: number, option: string) => {
+        const costs: Record<string, number> = {
+          email: 2,
+          phone: 3,
+          social: 1,
+          company: 4
+        };
+        return total + (costs[option] || 0);
+      }, 0) || 5;
 
       // Check if user has enough credits
       const updatedCredits = await storage.useCredits(
@@ -856,32 +864,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Email verification function
-async function verifyEmail(email: string): Promise<boolean> {
-  try {
-    const response = await fetch('https://app.icypeas.com/api/email-verification', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.ICYPEAS_API_KEY}`
-      },
-      body: JSON.stringify({
-        email,
-        customobject: {
-          webhookUrl: process.env.WEBHOOK_URL,
-          externalId: Date.now().toString()
-        }
-      })
-    });
+  async function verifyEmail(email: string): Promise<boolean> {
+    try {
+      const response = await fetch('https://app.icypeas.com/api/email-verification', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.ICYPEAS_API_KEY}`
+        },
+        body: JSON.stringify({
+          email,
+          customobject: {
+            webhookUrl: process.env.WEBHOOK_URL,
+            externalId: Date.now().toString()
+          }
+        })
+      });
 
-    const data = await response.json();
-    return data.isValid || false;
-  } catch (error) {
-    console.error('Error verifying email:', error);
-    return false;
+      const data = await response.json();
+      return data.isValid || false;
+    } catch (error) {
+      console.error('Error verifying email:', error);
+      return false;
+    }
   }
-}
 
-// Email finder endpoint
+  // Email finder endpoint
   app.post("/api/email/find", authenticateRequest, async (req, res) => {
     try {
       const user = (req as any).user;
@@ -904,30 +912,51 @@ async function verifyEmail(email: string): Promise<boolean> {
         throw new Error('ICYPEAS_API_KEY is not configured');
       }
 
-      const response = await fetch('https://app.icypeas.com/api/email-search', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${icypeasKey}`
-        },
-        body: JSON.stringify({
-          firstname: firstName,
-          lastname: lastName,
-          domain: domainOrCompany,
-          customObject: {
-            externalId: `${firstName}-${lastName}-${Date.now()}`
-          }
-        })
-      });
+      let resultData = null;
+      let attempts = 0;
+      const maxAttempts = 5;
 
-      const data = await response.json();
-
-      if (data.data && data.data.email) {
-        return res.status(200).json({
-          email: data.email,
-          creditsUsed: findCost,
-          creditsRemaining: updatedCredits
+      while (attempts < maxAttempts && !resultData) {
+        const response = await fetch('https://app.icypeas.com/api/email-search', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${icypeasKey}`
+          },
+          body: JSON.stringify({
+            firstname: firstName,
+            lastname: lastName,
+            domain: domainOrCompany,
+            customObject: {
+              externalId: `${firstName}-${lastName}-${Date.now()}`
+            }
+          })
         });
+
+        const data = await response.json();
+
+        if (data.success && data.item && data.item.email) {
+          resultData = data.item;
+          return res.status(200).json({
+            email: resultData.email,
+            creditsUsed: findCost,
+            creditsRemaining: updatedCredits
+          });
+        } else if (data.success && data.item && data.item.status === 'NONE') {
+          // Handle the case where the email is not yet found
+          console.log('Email not found yet, retrying...');
+
+
+                  } else if (!data.success) {
+          console.error('IcyPeas API error:', data.message || data);
+          return res.status(500).json({ message: "Failed to find email: " + (data.message || 'Unknown error') });
+        } else {
+          console.error('Unexpected IcyPeas API response:', data);
+          return res.status(500).json({ message: "Failed to find email: Unexpected API response" });
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds between attempts
+        attempts++;
       }
 
       return res.status(404).json({ 
