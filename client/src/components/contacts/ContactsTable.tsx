@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Contact, Company } from "@shared/schema";
 import { 
