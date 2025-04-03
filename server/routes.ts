@@ -53,19 +53,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(401).json({ message: "Unauthorized: No token provided" });
     }
-    
+
     const token = authHeader.split(" ")[1];
     const userId = verifyToken(token);
-    
+
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized: Invalid token" });
     }
-    
+
     const user = await storage.getUser(userId);
     if (!user) {
       return res.status(401).json({ message: "Unauthorized: User not found" });
     }
-    
+
     // Attach user to request for route handlers to use
     (req as any).user = user;
     next();
@@ -75,13 +75,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/signup/step1", async (req, res) => {
     try {
       const validatedData = stepOneSchema.parse(req.body);
-      
+
       // Check if user with email already exists
       const existingUser = await storage.getUserByEmail(validatedData.email);
       if (existingUser) {
         return res.status(400).json({ message: "Email already registered" });
       }
-      
+
       // Store in session or return data
       return res.status(200).json({ 
         message: "Step 1 completed", 
@@ -101,7 +101,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/signup/step2", async (req, res) => {
     try {
       const validatedData = stepTwoSchema.parse(req.body);
-      
+
       // In a real app, you would store this in a session
       return res.status(200).json({ 
         message: "Step 2 completed", 
@@ -121,13 +121,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/signup/step3", async (req, res) => {
     try {
       const validatedData = stepThreeSchema.parse(req.body);
-      
+
       // In a real app, you would verify against a code sent via email
       // Here we just check against our mock code
       if (validatedData.verificationCode !== MOCK_VERIFICATION_CODE) {
         return res.status(400).json({ message: "Invalid verification code" });
       }
-      
+
       return res.status(200).json({ 
         message: "Email verified successfully", 
         data: validatedData 
@@ -146,13 +146,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/signup/step4", async (req, res) => {
     try {
       const validatedData = stepFourSchema.parse(req.body);
-      
+
       // In a real app, you would combine all steps from session
       // For this example, we need all data in the request
       if (!req.body.userData) {
         return res.status(400).json({ message: "Missing user data from previous steps" });
       }
-      
+
       const userData: InsertUser = {
         fullName: req.body.userData.fullName,
         email: req.body.userData.email,
@@ -163,12 +163,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         credits: 100, // Default starting credits
         verified: true // Since we've verified in step 3
       };
-      
+
       const user = await storage.createUser(userData);
-      
+
       // Generate token
       const token = generateToken(user.id);
-      
+
       return res.status(201).json({
         message: "Account created successfully",
         token,
@@ -194,15 +194,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/signup/demo", async (req, res) => {
     try {
       const { fullName, email, password, companyName, industry, role } = req.body;
-      
+
       // Check if user already exists
       const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
         console.log("Demo user already exists");
-        
+
         // Generate token
         const token = generateToken(existingUser.id);
-        
+
         return res.status(200).json({
           message: "Demo account already exists",
           token,
@@ -214,7 +214,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         });
       }
-      
+
       // Create the demo user
       const userData: InsertUser = {
         fullName: fullName || "Demo User",
@@ -226,14 +226,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         credits: 125,
         verified: true
       };
-      
+
       console.log("Creating demo user:", userData.email);
-      
+
       const user = await storage.createUser(userData);
-      
+
       // Generate token
       const token = generateToken(user.id);
-      
+
       return res.status(201).json({
         message: "Demo account created successfully",
         token,
@@ -253,22 +253,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/login", async (req, res) => {
     try {
       const { email, password } = req.body;
-      
+
       console.log("Login attempt for:", email);
-      
+
       if (!email || !password) {
         return res.status(400).json({ message: "Email and password are required" });
       }
-      
+
       const user = await storage.getUserByEmail(email);
       console.log("User found:", !!user);
-      
+
       if (!user) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
-      
+
       console.log("Password check:", password);
-      
+
       // Allow hardcoded demo login
       if (email === "demo@example.com" && password === "password123") {
         console.log("Demo login successful");
@@ -281,10 +281,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(401).json({ message: "Invalid credentials" });
         }
       }
-      
+
       // Generate token
       const token = generateToken(user.id);
-      
+
       return res.status(200).json({
         message: "Login successful",
         token,
@@ -303,7 +303,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // USER ROUTES
   app.get("/api/user/profile", authenticateRequest, async (req, res) => {
     const user = (req as any).user;
-    
+
     return res.status(200).json({
       user: {
         id: user.id,
@@ -320,14 +320,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/user/credits", authenticateRequest, async (req, res) => {
     const user = (req as any).user;
     const credits = await storage.getCreditBalance(user.id);
-    
+
     return res.status(200).json({ credits });
   });
 
   app.get("/api/user/credit-transactions", authenticateRequest, async (req, res) => {
     const user = (req as any).user;
     const transactions = await storage.getCreditTransactions(user.id);
-    
+
     return res.status(200).json({ transactions });
   });
 
@@ -335,7 +335,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/contacts", authenticateRequest, async (req, res) => {
     const user = (req as any).user;
     const contacts = await storage.getContactsByUser(user.id);
-    
+
     return res.status(200).json({ contacts });
   });
 
@@ -343,10 +343,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = (req as any).user;
       const contactData = { ...req.body, userId: user.id };
-      
+
       const validatedData = insertContactSchema.parse(contactData);
       const contact = await storage.createContact(validatedData);
-      
+
       return res.status(201).json({ contact });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -362,21 +362,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/contacts/:id", authenticateRequest, async (req, res) => {
     const user = (req as any).user;
     const contactId = parseInt(req.params.id);
-    
+
     if (isNaN(contactId)) {
       return res.status(400).json({ message: "Invalid contact ID" });
     }
-    
+
     const contact = await storage.getContact(contactId);
-    
+
     if (!contact) {
       return res.status(404).json({ message: "Contact not found" });
     }
-    
+
     if (contact.userId !== user.id) {
       return res.status(403).json({ message: "Unauthorized: Contact belongs to another user" });
     }
-    
+
     return res.status(200).json({ contact });
   });
 
@@ -384,7 +384,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/companies", authenticateRequest, async (req, res) => {
     const user = (req as any).user;
     const companies = await storage.getCompaniesByUser(user.id);
-    
+
     return res.status(200).json({ companies });
   });
 
@@ -392,10 +392,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = (req as any).user;
       const companyData = { ...req.body, userId: user.id };
-      
+
       const validatedData = insertCompanySchema.parse(companyData);
       const company = await storage.createCompany(validatedData);
-      
+
       return res.status(201).json({ company });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -413,7 +413,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = (req as any).user;
       const { jobTitle, company, industry, location } = req.body;
-      
+
       // Check if user has enough credits
       const searchCost = 5; // Credits per search
       const updatedCredits = await storage.useCredits(
@@ -421,11 +421,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         searchCost, 
         "Contact search: " + (jobTitle || company || industry || location || "General search")
       );
-      
+
       if (updatedCredits === null) {
         return res.status(400).json({ message: "Insufficient credits" });
       }
-      
+
       // Perform search
       const results = await storage.searchContacts(user.id, {
         jobTitle,
@@ -433,7 +433,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         industry,
         location
       });
-      
+
       return res.status(200).json({ 
         results,
         creditsUsed: searchCost,
@@ -448,11 +448,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = (req as any).user;
       const { contactId } = req.body;
-      
+
       if (!contactId) {
         return res.status(400).json({ message: "Contact ID is required" });
       }
-      
+
       // Check if user has enough credits
       const revealCost = 2; // Credits per email reveal
       const updatedCredits = await storage.useCredits(
@@ -460,30 +460,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         revealCost, 
         "Email reveal for contact ID: " + contactId
       );
-      
+
       if (updatedCredits === null) {
         return res.status(400).json({ message: "Insufficient credits" });
       }
-      
+
       const contact = await storage.getContact(contactId);
       if (!contact) {
         return res.status(404).json({ message: "Contact not found" });
       }
-      
+
       // In a real implementation, this would call an external service
       // For this demo, we'll generate a fake email
       const companyDomain = contact.companyId ? 
         (await storage.getCompany(contact.companyId))?.website?.split('https://')[1] || 'example.com' : 
         'example.com';
-      
+
       const email = contact.email || 
         `${contact.fullName.toLowerCase().replace(/\s+/g, '.')}@${companyDomain}`;
-      
+
       await storage.updateContact(contactId, { 
         email, 
         isEnriched: true 
       });
-      
+
       return res.status(200).json({
         email,
         creditsUsed: revealCost,
@@ -499,19 +499,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = (req as any).user;
       const { contactId, purpose, tone, customPrompt } = req.body;
-      
+
       if (!contactId) {
         return res.status(400).json({ message: "Contact ID is required" });
       }
-      
+
       if (!Object.values(MessagePurpose).includes(purpose as MessagePurpose)) {
         return res.status(400).json({ message: "Invalid message purpose" });
       }
-      
+
       if (!Object.values(MessageTone).includes(tone as MessageTone)) {
         return res.status(400).json({ message: "Invalid message tone" });
       }
-      
+
       // Check if user has enough credits
       const generateCost = 3; // Credits per message generation
       const updatedCredits = await storage.useCredits(
@@ -519,23 +519,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         generateCost, 
         "AI message generation for contact ID: " + contactId
       );
-      
+
       if (updatedCredits === null) {
         return res.status(400).json({ message: "Insufficient credits" });
       }
-      
+
       const contact = await storage.getContact(contactId);
       if (!contact) {
         return res.status(404).json({ message: "Contact not found" });
       }
-      
+
       // Get company information if contact is associated with a company
       let companyName = null;
       if (contact.companyId) {
         const company = await storage.getCompany(contact.companyId);
         companyName = company?.name || null;
       }
-      
+
       // Generate AI message using Gemini
       const message = await generateMessage({
         contactFullName: contact.fullName,
@@ -548,7 +548,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         tone: tone as MessageTone,
         customPrompt: customPrompt
       });
-      
+
       return res.status(200).json({
         message,
         creditsUsed: generateCost,
@@ -559,36 +559,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ message: "Failed to generate message. Please try again." });
     }
   });
-  
+
   // Send AI message via email
   app.post("/api/ai-writer/send-email", authenticateRequest, async (req, res) => {
     try {
       const user = (req as any).user;
       const { contactId, message, subject } = req.body;
-      
+
       if (!contactId || !message) {
         return res.status(400).json({ message: "Contact ID and message are required" });
       }
-      
+
       const contact = await storage.getContact(contactId);
       if (!contact) {
         return res.status(404).json({ message: "Contact not found" });
       }
-      
+
       if (!contact.email) {
         return res.status(400).json({ message: "Contact has no email address" });
       }
-      
+
       // In a production environment, this would actually send the email
       // For this demo, we'll just simulate it and update the contact record
-      
+
       // Mark message as sent
       await storage.updateContact(contactId, {
         messageSent: true,
         messageSentDate: new Date(),
         lastContacted: new Date()
       });
-      
+
       return res.status(200).json({
         success: true,
         message: `Email sent to ${contact.fullName} at ${contact.email}`,
@@ -599,7 +599,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ message: "Failed to send email. Please try again." });
     }
   });
-  
+
   // Direct message generation for LinkedIn or other platforms
   app.post("/api/message/generate", authenticateRequest, async (req, res) => {
     try {
@@ -614,19 +614,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         purpose, 
         tone 
       } = req.body;
-      
+
       if (!contactFullName || !userFullName) {
         return res.status(400).json({ message: "Contact name and user name are required" });
       }
-      
+
       if (!Object.values(MessagePurpose).includes(purpose as MessagePurpose)) {
         return res.status(400).json({ message: "Invalid message purpose" });
       }
-      
+
       if (!Object.values(MessageTone).includes(tone as MessageTone)) {
         return res.status(400).json({ message: "Invalid message tone" });
       }
-      
+
       // Check if user has enough credits
       const generateCost = 3; // Credits per message generation
       const updatedCredits = await storage.useCredits(
@@ -634,11 +634,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         generateCost, 
         "AI message generation for LinkedIn"
       );
-      
+
       if (updatedCredits === null) {
         return res.status(400).json({ message: "Insufficient credits" });
       }
-      
+
       // Generate message
       const message = await generateMessage({
         contactFullName,
@@ -650,7 +650,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         purpose: purpose as MessagePurpose,
         tone: tone as MessageTone
       });
-      
+
       return res.status(200).json({
         message,
         creditsUsed: generateCost,
@@ -667,29 +667,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = (req as any).user;
       const { contactId, message } = req.body;
-      
+
       if (!contactId) {
         return res.status(400).json({ message: "Contact ID is required" });
       }
-      
+
       const contact = await storage.getContact(contactId);
       if (!contact) {
         return res.status(404).json({ message: "Contact not found" });
       }
-      
+
       if (!contact.linkedInUrl) {
         return res.status(400).json({ message: "Contact has no LinkedIn profile URL" });
       }
-      
+
       // In a production environment, this would use LinkedIn API
       // For this demo, we'll just simulate it and update the contact record
-      
+
       // Mark connection request as sent
       await storage.updateContact(contactId, {
         connectionSent: true,
         connectionSentDate: new Date()
       });
-      
+
       return res.status(200).json({
         success: true,
         message: `Connection request sent to ${contact.fullName} on LinkedIn`,
@@ -700,34 +700,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ message: "Failed to send connection request. Please try again." });
     }
   });
-  
+
   // Send Email
   app.post("/api/email/send", authenticateRequest, async (req, res) => {
     try {
       const user = (req as any).user;
       const { contactId, subject, message } = req.body;
-      
+
       if (!contactId) {
         return res.status(400).json({ message: "Contact ID is required" });
       }
-      
+
       if (!subject || !message) {
         return res.status(400).json({ message: "Email subject and message are required" });
       }
-      
+
       const contact = await storage.getContact(contactId);
       if (!contact) {
         return res.status(404).json({ message: "Contact not found" });
       }
-      
+
       if (!contact.email) {
         return res.status(400).json({ message: "Contact has no email address" });
       }
-      
+
       // Check if user has enough credits
       const emailCost = 3; // Credits per email sent
       const userCredits = await storage.getCreditBalance(user.id);
-      
+
       if (userCredits < emailCost) {
         return res.status(400).json({ 
           message: "Insufficient credits", 
@@ -735,38 +735,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
           available: userCredits 
         });
       }
-      
+
       // Import the email service
       const { sendContactEmail } = await import('./services/email');
-      
+
       // Send the email
       const emailResult = await sendContactEmail(user, {
         contact,
         subject,
         message
       });
-      
+
       if (!emailResult) {
         return res.status(500).json({ message: "Failed to send email. Please check SMTP settings." });
       }
-      
+
       // Use credits
       const newBalance = await storage.useCredits(
         user.id, 
         emailCost, 
         `Email sent to ${contact.fullName} (${contact.email})`
       );
-      
+
       if (newBalance === null) {
         return res.status(400).json({ message: "Failed to process credits" });
       }
-      
+
       // Update contact with the interaction
       await storage.updateContact(contactId, {
         emailSent: true,
         lastInteractionDate: new Date()
       });
-      
+
       return res.status(200).json({ 
         success: true, 
         message: `Email sent to ${contact.fullName} at ${contact.email}`,
@@ -781,39 +781,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
-  
+
   // Enrich a single contact
   app.post("/api/contact/enrich", authenticateRequest, async (req, res) => {
     try {
       const user = (req as any).user;
       const { contactId } = req.body;
-      
+
       if (!contactId) {
         return res.status(400).json({ message: "Contact ID is required" });
       }
-      
+
       const contact = await storage.getContact(contactId);
       if (!contact) {
         return res.status(404).json({ message: "Contact not found" });
       }
-      
+
       // Credit cost for enrichment
       const enrichCost = 5;
-      
+
       // Check if user has enough credits
       const updatedCredits = await storage.useCredits(
         user.id, 
         enrichCost, 
         `Contact enrichment for ${contact.fullName}`
       );
-      
+
       if (updatedCredits === null) {
         return res.status(400).json({ message: "Insufficient credits" });
       }
-      
+
       // In a production environment, this would call an enrichment API
       // For this demo, we'll just simulate it with sample data
-      
+
       const enrichedData = {
         email: contact.email || `${contact.fullName.toLowerCase().replace(/\s/g, '.')}@${contact.companyName?.toLowerCase().replace(/\s/g, '')}.com`,
         phone: contact.phone || "+1 (555) 123-4567",
@@ -823,10 +823,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
         enrichmentSource: "AI-CRM",
         enrichmentDate: new Date()
       };
-      
+
       // Update the contact with enriched data
       const updatedContact = await storage.updateContact(contactId, enrichedData);
-      
+
+      return res.status(200).json({
+        success: true,
+        message: `Contact data for ${contact.fullName} has been enriched`,
+        contact: updatedContact,
+        creditsUsed: enrichCost,
+        creditsRemaining: updatedCredits
+      });
+    } catch (error) {
+      console.error("Error enriching contact:", error);
+      return res.status(500).json({ message: "Failed to enrich contact. Please try again." });
+    }
+  });
+
+  // NEW ROUTE
+  app.post("/api/enrich/contact", authenticateRequest, async (req, res) => {
+    try {
+      const user = (req as any).user;
+      const { contactId, options } = req.body;
+
+      if (!contactId) {
+        return res.status(400).json({ message: "Contact ID is required" });
+      }
+
+      const contact = await storage.getContact(contactId);
+      if (!contact) {
+        return res.status(404).json({ message: "Contact not found" });
+      }
+
+      // Calculate enrichment cost based on selected options
+      const enrichCost = options?.reduce((total: number, option: string) => {
+        const costs: Record<string, number> = {
+          email: 2,
+          phone: 3,
+          social: 1,
+          company: 4
+        };
+        return total + (costs[option] || 0);
+      }, 0) || 5;
+
+      // Check if user has enough credits
+      const updatedCredits = await storage.useCredits(
+        user.id, 
+        enrichCost, 
+        `Contact enrichment for ${contact.fullName}`
+      );
+
+      if (updatedCredits === null) {
+        return res.status(400).json({ message: "Insufficient credits" });
+      }
+
+      // In a production environment, this would call an enrichment API
+      // For this demo, we'll just simulate it with sample data
+
+      const enrichedData = {
+        email: contact.email || `${contact.fullName.toLowerCase().replace(/\s/g, '.')}@${contact.companyName?.toLowerCase().replace(/\s/g, '')}.com`,
+        phone: contact.phone || "+1 (555) 123-4567",
+        linkedInUrl: contact.linkedInUrl || `https://linkedin.com/in/${contact.fullName.toLowerCase().replace(/\s/g, '-')}`,
+        isEnriched: true,
+        emailVerified: true,
+        enrichmentSource: "AI-CRM",
+        enrichmentDate: new Date()
+      };
+
+      // Update the contact with enriched data
+      const updatedContact = await storage.updateContact(contactId, enrichedData);
+
       return res.status(200).json({
         success: true,
         message: `Contact data for ${contact.fullName} has been enriched`,
@@ -855,7 +921,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: `HubSpot connection error: ${err.message || "Unknown error"}`
         }))
       ]);
-      
+
       const connections: CRMConnectionStatus[] = [
         {
           type: CRMType.Salesforce,
@@ -868,24 +934,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: hubspotStatus.message
         }
       ];
-      
+
       return res.status(200).json({ connections });
     } catch (error) {
       console.error("Error checking CRM connections:", error);
-      return res.status(500).json({ message: "Failed to check CRM connections" });
+      return resstatus(500).json({ message: "Failed to check CRM connections" });
     }
   });
-  
+
   // Import contacts routes
   app.post("/api/crm/import/contacts", authenticateRequest, async (req, res) => {
     try {
       const user = (req as any).user;
       const { source } = req.body;
-      
+
       if (!source || !Object.values(CRMType).includes(source)) {
         return res.status(400).json({ message: "Valid CRM source is required" });
       }
-      
+
       // Check if user has enough credits
       const importCost = 10; // Credits per import operation
       const updatedCredits = await storage.useCredits(
@@ -893,16 +959,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         importCost, 
         `Import contacts from ${source}`
       );
-      
+
       if (updatedCredits === null) {
         return res.status(400).json({ message: "Insufficient credits" });
       }
-      
+
       let importedContacts = [];
-      
+
       if (source === CRMType.Salesforce) {
         const sfContacts = await importContactsFromSalesforce();
-        
+
         // Save contacts to database
         for (const contact of sfContacts) {
           await storage.createContact({
@@ -911,11 +977,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             tags: ["Salesforce Import"]
           });
         }
-        
+
         importedContacts = sfContacts;
       } else if (source === CRMType.HubSpot) {
         const hsContacts = await importContactsFromHubspot();
-        
+
         // Save contacts to database
         for (const contact of hsContacts) {
           await storage.createContact({
@@ -924,10 +990,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             tags: ["HubSpot Import"]
           });
         }
-        
+
         importedContacts = hsContacts;
       }
-      
+
       return res.status(200).json({
         message: `Successfully imported ${importedContacts.length} contacts from ${source}`,
         count: importedContacts.length,
@@ -939,17 +1005,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ message: "Failed to import contacts" });
     }
   });
-  
+
   // Import companies routes
   app.post("/api/crm/import/companies", authenticateRequest, async (req, res) => {
     try {
       const user = (req as any).user;
       const { source } = req.body;
-      
+
       if (!source || !Object.values(CRMType).includes(source)) {
         return res.status(400).json({ message: "Valid CRM source is required" });
       }
-      
+
       // Check if user has enough credits
       const importCost = 10; // Credits per import operation
       const updatedCredits = await storage.useCredits(
@@ -957,16 +1023,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         importCost, 
         `Import companies from ${source}`
       );
-      
+
       if (updatedCredits === null) {
         return res.status(400).json({ message: "Insufficient credits" });
       }
-      
+
       let importedCompanies = [];
-      
+
       if (source === CRMType.Salesforce) {
         const sfCompanies = await importCompaniesFromSalesforce();
-        
+
         // Save companies to database
         for (const company of sfCompanies) {
           await storage.createCompany({
@@ -974,11 +1040,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             userId: user.id
           });
         }
-        
+
         importedCompanies = sfCompanies;
       } else if (source === CRMType.HubSpot) {
         const hsCompanies = await importCompaniesFromHubspot();
-        
+
         // Save companies to database
         for (const company of hsCompanies) {
           await storage.createCompany({
@@ -986,10 +1052,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             userId: user.id
           });
         }
-        
+
         importedCompanies = hsCompanies;
       }
-      
+
       return res.status(200).json({
         message: `Successfully imported ${importedCompanies.length} companies from ${source}`,
         count: importedCompanies.length,
@@ -1001,21 +1067,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ message: "Failed to import companies" });
     }
   });
-  
+
   // Export contacts routes
   app.post("/api/crm/export/contacts", authenticateRequest, async (req, res) => {
     try {
       const user = (req as any).user;
       const { destination, contactIds } = req.body;
-      
+
       if (!destination || !Object.values(CRMType).includes(destination)) {
         return res.status(400).json({ message: "Valid CRM destination is required" });
       }
-      
+
       if (!contactIds || !Array.isArray(contactIds) || contactIds.length === 0) {
         return res.status(400).json({ message: "At least one contact ID is required" });
       }
-      
+
       // Check if user has enough credits
       const exportCost = 5; // Credits per export operation
       const updatedCredits = await storage.useCredits(
@@ -1023,11 +1089,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         exportCost, 
         `Export contacts to ${destination}`
       );
-      
+
       if (updatedCredits === null) {
         return res.status(400).json({ message: "Insufficient credits" });
       }
-      
+
       // Get contacts to export
       const contacts = [];
       for (const id of contactIds) {
@@ -1036,16 +1102,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           contacts.push(contact);
         }
       }
-      
+
       if (contacts.length === 0) {
         return res.status(400).json({ message: "No valid contacts found to export" });
       }
-      
+
       let exportResult;
-      
+
       if (destination === CRMType.Salesforce) {
         exportResult = await exportContactsToSalesforce(contacts);
-        
+
         // Update contacts with Salesforce IDs
         if (exportResult.success) {
           for (let i = 0; i < contacts.length; i++) {
@@ -1060,7 +1126,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       } else if (destination === CRMType.HubSpot) {
         exportResult = await exportContactsToHubspot(contacts);
-        
+
         // Update contacts with HubSpot IDs
         if (exportResult.success) {
           for (let i = 0; i < contacts.length; i++) {
@@ -1074,7 +1140,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
       }
-      
+
       return res.status(200).json({
         success: exportResult?.success || false,
         message: exportResult?.success 
@@ -1089,21 +1155,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ message: "Failed to export contacts" });
     }
   });
-  
+
   // Export companies routes
   app.post("/api/crm/export/companies", authenticateRequest, async (req, res) => {
     try {
       const user = (req as any).user;
       const { destination, companyIds } = req.body;
-      
+
       if (!destination || !Object.values(CRMType).includes(destination)) {
         return res.status(400).json({ message: "Valid CRM destination is required" });
       }
-      
+
       if (!companyIds || !Array.isArray(companyIds) || companyIds.length === 0) {
         return res.status(400).json({ message: "At least one company ID is required" });
       }
-      
+
       // Check if user has enough credits
       const exportCost = 5; // Credits per export operation
       const updatedCredits = await storage.useCredits(
@@ -1111,11 +1177,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         exportCost, 
         `Export companies to ${destination}`
       );
-      
+
       if (updatedCredits === null) {
         return res.status(400).json({ message: "Insufficient credits" });
       }
-      
+
       // Get companies to export
       const companies = [];
       for (const id of companyIds) {
@@ -1124,16 +1190,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           companies.push(company);
         }
       }
-      
+
       if (companies.length === 0) {
         return res.status(400).json({ message: "No valid companies found to export" });
       }
-      
+
       let exportResult;
-      
+
       if (destination === CRMType.Salesforce) {
         exportResult = await exportCompaniesToSalesforce(companies);
-        
+
         // Update companies with Salesforce IDs
         if (exportResult.success) {
           for (let i = 0; i < companies.length; i++) {
@@ -1148,7 +1214,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       } else if (destination === CRMType.HubSpot) {
         exportResult = await exportCompaniesToHubspot(companies);
-        
+
         // Update companies with HubSpot IDs
         if (exportResult.success) {
           for (let i = 0; i < companies.length; i++) {
@@ -1162,7 +1228,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
       }
-      
+
       return res.status(200).json({
         success: exportResult?.success || false,
         message: exportResult?.success 
