@@ -54,9 +54,10 @@ interface ContactsTableProps {
   onEnrichContact?: (contact: Contact) => void;
   onSendEmail?: (contact: Contact) => void;
   isRevealingEmail: boolean;
-  handleAIWriter: (contact: Contact) => void; // Added function
-  handleCRMExport: (contact: Contact) => void; // Added function
-
+  handleAIWriter: (contact: Contact) => void;
+  handleCRMExport: (contact: Contact) => void;
+  pageSize?: number;
+  onPageSizeChange?: (size: number) => void;
 }
 
 export default function ContactsTable({
@@ -70,8 +71,13 @@ export default function ContactsTable({
   onSendEmail,
   isRevealingEmail,
   handleAIWriter,
-  handleCRMExport
+  handleCRMExport,
+  pageSize = 10, // Default page size
+  onPageSizeChange
 }: ContactsTableProps) {
+
+  const paginatedContacts = contacts.slice(0, pageSize); // Added pagination
+
   return (
     <div className="w-full overflow-auto">
       <Table>
@@ -104,7 +110,7 @@ export default function ContactsTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {contacts.map((contact) => (
+          {paginatedContacts.map((contact) => ( // Using paginatedContacts
             <TableRow key={contact.id} className="hover:bg-gray-50">
               <TableCell>
                 <input type="checkbox" className="rounded border-gray-300" />
@@ -284,6 +290,23 @@ export default function ContactsTable({
           ))}
         </TableBody>
       </Table>
+      <div className="flex items-center space-x-4 mt-4">
+        <div className="flex items-center space-x-2">
+          <span className="text-sm text-gray-500">Show:</span>
+          <select 
+            className="h-8 w-20 rounded-md border border-gray-200 text-sm" 
+            value={pageSize}
+            onChange={(e) => onPageSizeChange?.(Number(e.target.value))}
+          >
+            <option value={10}>10</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
+        </div>
+        <span className="text-sm text-gray-500">
+          {contacts.length > 0 ? 1 : 0} - {Math.min(paginatedContacts.length, pageSize)} of {contacts.length}
+        </span>
+      </div>
     </div>
   );
 }

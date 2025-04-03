@@ -70,6 +70,7 @@ export default function ContactsNewPage() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [isFiltersVisible, setIsFiltersVisible] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
@@ -500,12 +501,16 @@ export default function ContactsNewPage() {
   }) || [];
   
   // Calculate pagination
-  const itemsPerPage = 10;
-  const totalPages = Math.ceil((filteredContacts?.length || 0) / itemsPerPage);
+  const totalPages = Math.ceil((filteredContacts?.length || 0) / pageSize);
   const paginatedContacts = filteredContacts.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
   );
+  
+  const handlePageSizeChange = (newSize: number) => {
+    setPageSize(newSize);
+    setCurrentPage(1); // Reset to first page when changing page size
+  };
   
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -634,6 +639,8 @@ export default function ContactsNewPage() {
                   }}
                   onWriteMessage={handleWriteMessage}
                   isRevealingEmail={isRevealingEmail}
+                  pageSize={pageSize}
+                  onPageSizeChange={handlePageSizeChange}
                 />
               ) : (
                 <div className="flex flex-col items-center justify-center py-16">
